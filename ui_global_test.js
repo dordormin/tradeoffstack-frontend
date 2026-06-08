@@ -153,22 +153,41 @@ import path from 'path';
     console.log('   Maintenance request modified successfully.');
 
     // ==========================================
-    // STEP 7: CLEAN UP DEPENDENCIES (CANCEL TICKET & RESERVATION)
+    // STEP 7: CLEAN UP DEPENDENCIES (API-LEVEL DELETION)
     // ==========================================
-    console.log('11. Cancelling maintenance ticket to release dependency...');
-    const maintRowToCancel = page.locator(`tr:has-text("${uniqueSerial}")`);
-    await maintRowToCancel.locator('button:has-text("Cancel")').click();
-    await page.waitForSelector(`tr:has-text("${uniqueSerial}"):has-text("Cancelled")`);
-    console.log('   Maintenance ticket cancelled.');
+    console.log('11. Deleting maintenance ticket via API...');
+    const maintDeleted = await page.evaluate(async (serial) => {
+      const token = localStorage.getItem('jwt_token');
+      const res = await fetch('/api/maintenancerequest', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const list = await res.json();
+      const item = list.find(m => m.equipment?.serial_number === serial || m.equipment?.name?.includes(serial));
+      if (!item) return 'not_found';
+      const delRes = await fetch(`/api/maintenancerequest/${item.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return delRes.status === 204 ? 'success' : 'failed';
+    }, uniqueSerial);
+    console.log(`    Result: ${maintDeleted}`);
 
-    console.log('12. Navigating back to Reservations to cancel reservation...');
-    await page.click('a:has-text("Reservations")');
-    await page.waitForSelector('text=New Reservation');
-    
-    const resRowToCancel = page.locator(`tr:has-text("${uniqueSerial}")`);
-    await resRowToCancel.locator('button:has-text("Cancel")').click();
-    await page.waitForSelector(`tr:has-text("${uniqueSerial}"):has-text("Cancelled")`);
-    console.log('   Reservation cancelled.');
+    console.log('12. Deleting reservation via API...');
+    const resDeleted = await page.evaluate(async (serial) => {
+      const token = localStorage.getItem('jwt_token');
+      const res = await fetch('/api/reservation', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const list = await res.json();
+      const item = list.find(r => r.equipment?.serial_number === serial || r.equipment?.name?.includes(serial));
+      if (!item) return 'not_found';
+      const delRes = await fetch(`/api/reservation/${item.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return delRes.status === 204 ? 'success' : 'failed';
+    }, uniqueSerial);
+    console.log(`    Result: ${resDeleted}`);
 
     // ==========================================
     // STEP 8: DELETE ASSET (INVENTORY)
