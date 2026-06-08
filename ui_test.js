@@ -8,8 +8,11 @@ import path from 'path';
     fs.mkdirSync(artifactDir, { recursive: true });
   }
 
-  console.log('Starting Playwright Browser...');
-  const browser = await chromium.launch({ headless: true });
+  console.log('Starting Playwright Browser (Headful)...');
+  const browser = await chromium.launch({ 
+    headless: false, 
+    slowMo: 800 // pauses for 800ms between actions to let you follow visually
+  });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 }
   });
