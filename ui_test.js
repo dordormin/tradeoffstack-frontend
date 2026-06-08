@@ -28,8 +28,8 @@ import path from 'path';
 
     // Step 2: Login Action
     console.log('2. Entering Admin Credentials...');
-    await page.fill('input[placeholder="admin@tradeoffstack.com"]', 'admin@tradeoffstack.com');
-    await page.fill('input[placeholder="••••••••"]', 'Admin123!Secure');
+    await page.fill('input[type="email"]', 'admin@tradeoffstack.com');
+    await page.fill('input[type="password"]', 'Admin123!Secure');
     await page.click('button:has-text("Sign In to Account")');
 
     // Step 3: Wait for Dashboard
