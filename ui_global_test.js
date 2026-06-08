@@ -18,6 +18,12 @@ import path from 'path';
   });
   const page = await context.newPage();
 
+  // Automatically accept all confirm/alert dialogs (Delete, Cancel, etc.)
+  page.on('dialog', async dialog => {
+    console.log(`    [Dialog] Automatically accepting: "${dialog.message()}"`);
+    await dialog.accept();
+  });
+
   // Generate unique serial number to identify our test asset
   const uniqueSerial = 'E2E-SRL-' + Math.floor(Math.random() * 1000000);
   const assetName = 'E2E Test Laptop Pro ' + uniqueSerial;
@@ -177,12 +183,6 @@ import path from 'path';
     await page.screenshot({ path: path.join(artifactDir, 'global_16_asset_details_sheet.png') });
 
     console.log('15. Deleting the asset...');
-    // Handle the browser confirm dialog
-    page.once('dialog', dialog => {
-      console.log(`    Handling confirm dialog: "${dialog.message()}"`);
-      dialog.accept();
-    });
-    
     await page.click('button:has-text("Delete")');
     
     // Wait for the asset to be removed from the list
