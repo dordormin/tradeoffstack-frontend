@@ -158,13 +158,13 @@ import path from 'path';
     console.log('11. Deleting maintenance ticket via API...');
     const maintDeleted = await page.evaluate(async (serial) => {
       const token = localStorage.getItem('jwt_token');
-      const res = await fetch('/api/maintenancerequest', {
+      const res = await fetch('http://localhost:5000/api/maintenancerequest', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const list = await res.json();
       const item = list.find(m => m.equipment?.serial_number === serial || m.equipment?.name?.includes(serial));
       if (!item) return 'not_found';
-      const delRes = await fetch(`/api/maintenancerequest/${item.id}`, {
+      const delRes = await fetch(`http://localhost:5000/api/maintenancerequest/${item.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -175,13 +175,13 @@ import path from 'path';
     console.log('12. Deleting reservation via API...');
     const resDeleted = await page.evaluate(async (serial) => {
       const token = localStorage.getItem('jwt_token');
-      const res = await fetch('/api/reservation', {
+      const res = await fetch('http://localhost:5000/api/reservation', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const list = await res.json();
       const item = list.find(r => r.equipment?.serial_number === serial || r.equipment?.name?.includes(serial));
       if (!item) return 'not_found';
-      const delRes = await fetch(`/api/reservation/${item.id}`, {
+      const delRes = await fetch(`http://localhost:5000/api/reservation/${item.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
