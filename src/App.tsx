@@ -1,0 +1,431 @@
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { Dashboard } from '@/pages/Dashboard';
+import { Inventory } from '@/pages/Inventory';
+import { SelfService } from '@/pages/SelfService';
+import { Reservations } from '@/pages/Reservations';
+import { Maintenance } from '@/pages/Maintenance';
+import { Departments } from '@/pages/Departments';
+import { Users } from '@/pages/Users';
+import { AuditLogs } from '@/pages/AuditLogs';
+import { apiClient } from '@/api/apiClient';
+import { Shield, UserPlus, LogIn, Lock, Mail, User, Eye, EyeOff, LayoutGrid } from 'lucide-react';
+const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: string[] }) => {
+  const { isAuthenticated, role, isLoading } = useAuth();
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (allowedRoles && role && !allowedRoles.includes(role)) return <Navigate to="/dashboard" replace />;
+  
+  return children ? <>{children}</> : <Outlet />;
+};
+
+const LoginForm = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  
+  // Tab State: 'signin' | 'signup'
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  
+  // Shared States
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sign Up States
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleSignInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+    try {
+      const response = await apiClient.post('/auth/login', { email, password });
+      const data = response.data;
+      const token = data.token || data.Token;
+      const role = data.role || data.Role;
+      const userId = data.userId || data.UserId || data.user_id;
+      if (token && role && userId) {
+        login(token, role, userId);
+        navigate('/dashboard');
+      } else {
+        setError('Invalid server response.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid credentials or connection issue.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await apiClient.post('/auth/register', {
+        firstName,
+        lastName,
+        email,
+        password
+      });
+      const data = response.data;
+      const token = data.token || data.Token;
+      const role = data.role || data.Role;
+      const userId = data.userId || data.UserId || data.user_id;
+      
+      setSuccess('Account created successfully! Logging you in...');
+      
+      setTimeout(() => {
+        if (token && role && userId) {
+          login(token, role, userId);
+          navigate('/dashboard');
+        } else {
+          setActiveTab('signin');
+          setSuccess('');
+        }
+      }, 1500);
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed. Please check your inputs.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full flex bg-background text-foreground overflow-hidden">
+      {/* Left Pane - Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 md:px-16 lg:px-20 py-12 relative z-10 bg-gradient-to-br from-background via-background/95 to-secondary/10">
+        
+        {/* Decorative Neon Glow Elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="w-full max-w-md mx-auto space-y-8">
+          
+          {/* Header */}
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-tr from-primary to-indigo-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                <LayoutGrid className="w-6 h-6" />
+              </div>
+              <span className="text-xl font-bold tracking-wider uppercase bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground/80 font-mono">
+                TradeOffStack
+              </span>
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-foreground/90 pt-4">
+              {activeTab === 'signin' ? 'Welcome back' : 'Create an account'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {activeTab === 'signin' 
+                ? 'Sign in to access your corporate IT asset workspace.' 
+                : 'Get started with self-service hardware provisioning.'}
+            </p>
+          </div>
+
+          {/* Custom Modern Tabs */}
+          <div className="grid grid-cols-2 p-1 bg-secondary/40 border border-border/50 rounded-xl backdrop-blur-sm">
+            <button
+              onClick={() => { setActiveTab('signin'); setError(''); setSuccess(''); }}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'signin'
+                  ? 'bg-background text-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+            <button
+              onClick={() => { setActiveTab('signup'); setError(''); setSuccess(''); }}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'signup'
+                  ? 'bg-background text-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <UserPlus className="w-4 h-4" />
+              Sign Up
+            </button>
+          </div>
+
+          {/* Notifications */}
+          {error && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive font-medium flex items-start gap-2 shadow-sm animate-shake">
+              <span className="text-base">⚠️</span>
+              <div className="flex-1">{error}</div>
+            </div>
+          )}
+          {success && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-400 font-medium flex items-start gap-2 shadow-sm">
+              <span className="text-base">✅</span>
+              <div className="flex-1">{success}</div>
+            </div>
+          )}
+
+          {/* Form Content */}
+          {activeTab === 'signin' ? (
+            <form onSubmit={handleSignInSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@tradeoffstack.com"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</label>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-11 pr-12 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2 text-sm mt-2"
+              >
+                {isLoading ? (
+                  <span className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    Sign In to Account
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignUpSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">First Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                    <input
+                      type="text"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Jane"
+                      className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                    <input
+                      type="text"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Doe"
+                      className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="jane.doe@company.com"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Confirm</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent transition-all placeholder:text-muted-foreground/45"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex justify-center items-center gap-2 text-sm mt-3"
+              >
+                {isLoading ? (
+                  <span className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    Create Free Account
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Footer Info */}
+          <div className="text-center pt-2">
+            <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-primary/80" />
+              Secured with AES-256 JWT Authorization tokens.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Pane - Visual Image */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-950/90 via-slate-900/60 to-transparent z-10" />
+        <img
+          src="/login_hero.png"
+          alt="Futuristic IT Infrastructure"
+          className="object-cover w-full h-full"
+        />
+        
+        {/* Overlay Content */}
+        <div className="absolute bottom-16 left-16 right-16 z-20 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-xs font-semibold text-primary-foreground font-mono">v4.0.0 Stable</span>
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white leading-tight">
+            IT Asset Lifecycle Management, Orchestrated.
+          </h1>
+          <p className="text-slate-300 text-base max-w-lg">
+            Track hardware parameters, automate reservation lifecycles, and coordinate technical interventions inside a unified glassmorphic enterprise dashboard.
+          </p>
+          
+          <div className="pt-4 grid grid-cols-3 gap-6 border-t border-white/10 max-w-md">
+            <div>
+              <p className="text-2xl font-bold text-white">99.9%</p>
+              <p className="text-xs text-slate-400">System Uptime</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">100ms</p>
+              <p className="text-xs text-slate-400">Avg API Response</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">Active</p>
+              <p className="text-xs text-slate-400">Audit Journaling</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginForm />} />
+          
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/inventory" element={
+                <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+                  <Inventory />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-gear" element={
+                <ProtectedRoute allowedRoles={['Employee']}>
+                  <SelfService />
+                </ProtectedRoute>
+              } />
+              <Route path="/reservations" element={<Reservations />} />
+              <Route path="/maintenance" element={<Maintenance />} />
+              <Route path="/departments" element={<Departments />} />
+              <Route path="/users" element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <Users />
+                </ProtectedRoute>
+              } />
+              <Route path="/audit-logs" element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AuditLogs />
+                </ProtectedRoute>
+              } />
+            </Route>
+          </Route>
+          
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
