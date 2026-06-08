@@ -20,7 +20,7 @@ import path from 'path';
 
   // Generate unique serial number to identify our test asset
   const uniqueSerial = 'E2E-SRL-' + Math.floor(Math.random() * 1000000);
-  const assetName = 'E2E Test Laptop Pro';
+  const assetName = 'E2E Test Laptop Pro ' + uniqueSerial;
 
   try {
     // ==========================================
