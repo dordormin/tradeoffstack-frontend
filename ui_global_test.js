@@ -59,7 +59,7 @@ import path from 'path';
     await page.fill('input[type="number"]', '1500');
     await page.fill('textarea', 'Temporary laptop created by automated E2E test suite.');
     await page.screenshot({ path: path.join(artifactDir, 'global_04_create_asset_form.png') });
-    await page.click('button[type="submit"]:has-text("Add New IT Asset")');
+    await page.click('button[type="submit"]:has-text("Create Asset")');
     
     // Wait for the asset to appear in the table
     await page.waitForSelector(`text=${uniqueSerial}`);
@@ -101,7 +101,7 @@ import path from 'path';
     
     await page.fill('textarea', 'E2E Reservation Test Notes - MODIFIED.');
     await page.screenshot({ path: path.join(artifactDir, 'global_09_edit_reservation_form.png') });
-    await page.click('button[type="submit"]:has-text("Modify Equipment Booking")');
+    await page.click('button[type="submit"]:has-text("Submit Reservation")');
     
     await page.waitForSelector('text=E2E Reservation Test Notes - MODIFIED.');
     await page.screenshot({ path: path.join(artifactDir, 'global_10_reservation_modified.png') });
@@ -140,7 +140,7 @@ import path from 'path';
     
     await page.selectOption('select:has(option[value="Critical"])', 'Critical');
     await page.screenshot({ path: path.join(artifactDir, 'global_14_edit_maintenance_form.png') });
-    await page.click('button[type="submit"]:has-text("Modify Maintenance Request")');
+    await page.click('button[type="submit"]:has-text("Submit Ticket")');
     
     await page.waitForSelector('text=Critical');
     await page.screenshot({ path: path.join(artifactDir, 'global_15_maintenance_modified.png') });
