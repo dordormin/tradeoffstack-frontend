@@ -57,7 +57,7 @@ import path from 'path';
     await page.fill('input[placeholder="Manufacturer Serial No."]', uniqueSerial);
     await page.selectOption('select:has(option[value="Laptop"])', 'Laptop');
     await page.fill('input[type="number"]', '1500');
-    await page.fill('textarea[placeholder="Asset details, specifications, or location notes..."]', 'Temporary laptop created by automated E2E test suite.');
+    await page.fill('textarea', 'Temporary laptop created by automated E2E test suite.');
     await page.screenshot({ path: path.join(artifactDir, 'global_04_create_asset_form.png') });
     await page.click('button[type="submit"]:has-text("Add New IT Asset")');
     
