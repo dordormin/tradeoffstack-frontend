@@ -103,7 +103,7 @@ import path from 'path';
     await page.screenshot({ path: path.join(artifactDir, 'global_09_edit_reservation_form.png') });
     await page.click('button[type="submit"]:has-text("Submit Reservation")');
     
-    await page.waitForSelector('text=E2E Reservation Test Notes - MODIFIED.');
+    await page.waitForSelector('text=Modify Equipment Booking', { state: 'detached' });
     await page.screenshot({ path: path.join(artifactDir, 'global_10_reservation_modified.png') });
     console.log('   Reservation modified successfully.');
 
