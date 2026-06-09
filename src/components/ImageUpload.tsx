@@ -40,10 +40,11 @@ export function ImageUpload({ onUploadSuccess, onUploadError, folder = 'equipmen
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('folder', folder);
       
       const token = localStorage.getItem('jwt_token');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload/${folder}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
