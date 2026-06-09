@@ -23,10 +23,13 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
 };
 
 const LoginForm = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
+  console.log('LoginForm render. isAuthenticated =', isAuthenticated);
   
-  // Tab State: 'signin' | 'signup'
+  if (isAuthenticated) {
+    console.log('LoginForm: Navigating to /dashboard because isAuthenticated is true');
+    return <Navigate to="/dashboard" replace />;
+  }// Tab State: 'signin' | 'signup'
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   
   // Shared States
@@ -54,8 +57,9 @@ const LoginForm = () => {
       const role = data.role || data.Role;
       const userId = data.userId || data.UserId || data.user_id;
       if (token && role && userId) {
-        login(token, role, userId);
-        navigate('/dashboard');
+        console.log('handleSignInSubmit: about to await login(...)');
+        await login(token, role, userId);
+        console.log('handleSignInSubmit: login(...) finished');
       } else {
         setError('Invalid server response.');
       }
@@ -91,10 +95,9 @@ const LoginForm = () => {
       
       setSuccess('Account created successfully! Logging you in...');
       
-      setTimeout(() => {
+      setTimeout(async () => {
         if (token && role && userId) {
-          login(token, role, userId);
-          navigate('/dashboard');
+          await login(token, role, userId);
         } else {
           setActiveTab('signin');
           setSuccess('');

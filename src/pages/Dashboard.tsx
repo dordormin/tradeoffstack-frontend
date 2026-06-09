@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MonitorSmartphone, CalendarClock, Wrench, ShieldAlert, Plus, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { apiClient } from '@/api/apiClient';
 import type { Equipment, Reservation, MaintenanceRequest, AuditLog } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +27,8 @@ interface ActivityItem {
 
 export const Dashboard: React.FC = () => {
   const { role } = useAuth();
+  const { language } = useTranslation();
+  const isFr = language === 'fr';
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalAssets: 0,
@@ -45,12 +48,12 @@ export const Dashboard: React.FC = () => {
       const diffHours = Math.floor(diffMins / 60);
       const diffDays = Math.floor(diffHours / 24);
 
-      if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
-      return `${diffDays}d ago`;
+      if (diffMins < 1) return isFr ? 'À l\'instant' : 'Just now';
+      if (diffMins < 60) return isFr ? `Il y a ${diffMins}m` : `${diffMins}m ago`;
+      if (diffHours < 24) return isFr ? `Il y a ${diffHours}h` : `${diffHours}h ago`;
+      return isFr ? `Il y a ${diffDays}j` : `${diffDays}d ago`;
     } catch {
-      return 'Recent';
+      return isFr ? 'Récemment' : 'Recent';
     }
   };
 
@@ -58,7 +61,6 @@ export const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // Fetch core entities in parallel
         const [equipRes, reserveRes, maintRes] = await Promise.all([
           apiClient.get<Equipment[]>('/equipment').catch(() => ({ data: [] })),
           apiClient.get<Reservation[]>('/reservation').catch(() => ({ data: [] })),
@@ -69,7 +71,6 @@ export const Dashboard: React.FC = () => {
         const reservations = reserveRes.data || [];
         const maintenances = maintRes.data || [];
 
-        // Calculate stats
         const totalAssets = equipments.length;
         const availableGear = equipments.filter(e => e.status === 'Available').length;
         const activeReservations = reservations.filter(r => r.status === 'Active').length;
@@ -84,10 +85,8 @@ export const Dashboard: React.FC = () => {
           criticalMaintenances,
         });
 
-        // Resolve item names helper maps
         const equipMap = new Map(equipments.map(e => [e.id, e.name]));
 
-        // Load activities
         if (role === 'Admin') {
           try {
             const auditRes = await apiClient.get<AuditLog[]>('/auditlog');
@@ -97,12 +96,24 @@ export const Dashboard: React.FC = () => {
               let targetLabel = log.entity_id;
               
               if (log.entity_type === 'Equipment') {
-                targetLabel = equipMap.get(log.entity_id) || `Asset ID: ${log.entity_id.slice(0, 8)}`;
-                actionLabel = log.action === 'Created' ? 'New Asset Added' : log.action === 'Updated' ? 'Asset Updated' : 'Asset Removed';
+                targetLabel = equipMap.get(log.entity_id) || `Équipement ID: ${log.entity_id.slice(0, 8)}`;
+                if (isFr) {
+                  actionLabel = log.action === 'Created' ? 'Nouvel équipement créé' : log.action === 'Updated' ? 'Équipement mis à jour' : 'Équipement supprimé';
+                } else {
+                  actionLabel = log.action === 'Created' ? 'New Asset Added' : log.action === 'Updated' ? 'Asset Updated' : 'Asset Removed';
+                }
               } else if (log.entity_type === 'Reservation') {
-                actionLabel = log.action === 'Created' ? 'Reservation Request' : log.action === 'Updated' ? 'Reservation Modified' : 'Reservation Cancelled';
+                if (isFr) {
+                  actionLabel = log.action === 'Created' ? 'Réservation demandée' : log.action === 'Updated' ? 'Réservation modifiée' : 'Réservation annulée';
+                } else {
+                  actionLabel = log.action === 'Created' ? 'Reservation Request' : log.action === 'Updated' ? 'Reservation Modified' : 'Reservation Cancelled';
+                }
               } else if (log.entity_type === 'MaintenanceRequest') {
-                actionLabel = log.action === 'Created' ? 'Maintenance Opened' : log.action === 'Updated' ? 'Maintenance Updated' : 'Maintenance Request';
+                if (isFr) {
+                  actionLabel = log.action === 'Created' ? 'Maintenance ouverte' : log.action === 'Updated' ? 'Maintenance mise à jour' : 'Demande de maintenance';
+                } else {
+                  actionLabel = log.action === 'Created' ? 'Maintenance Opened' : log.action === 'Updated' ? 'Maintenance Updated' : 'Maintenance Request';
+                }
               }
 
               const userName = log.performed_by 
@@ -137,13 +148,12 @@ export const Dashboard: React.FC = () => {
             setActivities([]);
           }
         } else {
-          // Non-admin fallback to list recent reservations and maintenance requests
           const recentList: ActivityItem[] = [];
           
           reservations.slice(0, 3).forEach(r => {
             recentList.push({
               id: r.id,
-              action: `Equipment Assigned`,
+              action: isFr ? 'Matériel assigné' : 'Equipment Assigned',
               target: r.equipment?.name || equipMap.get(r.equipment_id) || 'IT Asset',
               user: r.user ? `${r.user.first_name} ${r.user.last_name}` : 'Employee',
               time: formatTime(r.created_at || new Date().toISOString()),
@@ -155,7 +165,7 @@ export const Dashboard: React.FC = () => {
           maintenances.slice(0, 2).forEach(m => {
             recentList.push({
               id: m.id,
-              action: `Maintenance Ticket`,
+              action: isFr ? 'Ticket de maintenance' : 'Maintenance Ticket',
               target: m.equipment?.name || equipMap.get(m.equipment_id) || 'IT Asset',
               user: m.requested_by ? `${m.requested_by.first_name} ${m.requested_by.last_name}` : 'Requester',
               time: formatTime(m.created_at || new Date().toISOString()),
@@ -175,12 +185,14 @@ export const Dashboard: React.FC = () => {
     };
 
     fetchDashboardData();
-  }, [role]);
+  }, [role, language]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-lg text-muted-foreground animate-pulse">Loading dashboard metrics...</div>
+        <div className="text-lg text-muted-foreground animate-pulse">
+          {isFr ? 'Chargement des statistiques...' : 'Loading dashboard metrics...'}
+        </div>
       </div>
     );
   }
@@ -189,9 +201,11 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {isFr ? 'Tableau de bord' : 'Dashboard'}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Overview of your IT Asset Management environment.
+            {isFr ? 'Aperçu général de la gestion de votre parc informatique.' : 'Overview of your IT Asset Management environment.'}
           </p>
         </div>
         <div className="flex gap-3">
@@ -199,18 +213,18 @@ export const Dashboard: React.FC = () => {
             <>
               <Button onClick={() => navigate('/my-gear')} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="w-4 h-4 mr-2" />
-                Request Asset
+                {isFr ? 'Demander un équipement' : 'Request Asset'}
               </Button>
               <Button onClick={() => navigate('/maintenance')} variant="outline" className="border-border hover:bg-secondary">
                 <AlertCircle className="w-4 h-4 mr-2 text-amber-500" />
-                Report Issue
+                {isFr ? 'Signaler un problème' : 'Report Issue'}
               </Button>
             </>
           )}
           {(role === 'Admin' || role === 'Manager') && (
             <Button onClick={() => navigate('/inventory')} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" />
-              Manage Inventory
+              {isFr ? 'Gérer l\'inventaire' : 'Manage Inventory'}
             </Button>
           )}
         </div>
@@ -220,49 +234,65 @@ export const Dashboard: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {isFr ? 'Total Équipements' : 'Total Assets'}
+            </CardTitle>
             <MonitorSmartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{stats.totalAssets}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active hardware in database</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Available Gear</CardTitle>
-            <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.availableGear}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.totalAssets > 0 
-                ? `${Math.round((stats.availableGear / stats.totalAssets) * 100)}% of total inventory` 
-                : '0% of total inventory'}
+              {isFr ? 'Matériel actif enregistré' : 'Active hardware in database'}
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Reservations</CardTitle>
-            <CalendarClock className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {isFr ? 'Équipements disponibles' : 'Available Gear'}
+            </CardTitle>
+            <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{stats.activeReservations}</div>
-            <p className="text-xs text-muted-foreground mt-1">Currently checked out by users</p>
+            <div className="text-2xl font-bold text-foreground">{stats.availableGear}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.totalAssets > 0 
+                ? isFr 
+                  ? `${Math.round((stats.availableGear / stats.totalAssets) * 100)}% de l'inventaire total` 
+                  : `${Math.round((stats.availableGear / stats.totalAssets) * 100)}% of total inventory` 
+                : '0%'}
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Critical Maintenance</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {isFr ? 'Réservations Actives' : 'Active Reservations'}
+            </CardTitle>
+            <CalendarClock className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{stats.activeReservations}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isFr ? 'Actuellement assignés aux utilisateurs' : 'Currently checked out by users'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {isFr ? 'Maintenance Critique' : 'Critical Maintenance'}
+            </CardTitle>
             <Wrench className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{stats.criticalMaintenances}</div>
-            <p className="text-xs text-muted-foreground mt-1 text-rose-500 font-medium">Requires immediate action</p>
+            <p className="text-xs text-muted-foreground mt-1 text-rose-500 font-medium">
+              {isFr ? 'Nécessite une action immédiate' : 'Requires immediate action'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -272,11 +302,15 @@ export const Dashboard: React.FC = () => {
         {/* Recent Activity */}
         <Card className="col-span-4 bg-card border-border shadow-sm">
           <CardHeader>
-            <CardTitle className="text-foreground">Recent Activity</CardTitle>
+            <CardTitle className="text-foreground">
+              {isFr ? 'Activité Récente' : 'Recent Activity'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {activities.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">No recent activities found.</div>
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                {isFr ? 'Aucune activité récente trouvée.' : 'No recent activities found.'}
+              </div>
             ) : (
               <div className="space-y-6">
                 {activities.map((activity) => (
@@ -301,7 +335,9 @@ export const Dashboard: React.FC = () => {
         {/* Quick Links / Notifications */}
         <Card className="col-span-3 bg-card border-border shadow-sm">
           <CardHeader>
-            <CardTitle className="text-foreground">System Health</CardTitle>
+            <CardTitle className="text-foreground">
+              {isFr ? 'État du système' : 'System Health'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center h-[300px] text-center space-y-4">
              <div className="relative">
@@ -312,8 +348,12 @@ export const Dashboard: React.FC = () => {
                 </div>
              </div>
              <div>
-               <h3 className="text-lg font-medium text-foreground">All Systems Operational</h3>
-               <p className="text-sm text-muted-foreground mt-1">API, Database, and Storage are running smoothly.</p>
+                <h3 className="text-lg font-medium text-foreground">
+                  {isFr ? 'Tous les systèmes sont opérationnels' : 'All Systems Operational'}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {isFr ? 'L\'API, la base de données et les serveurs fonctionnent normalement.' : 'API, Database, and Storage are running smoothly.'}
+                </p>
              </div>
           </CardContent>
         </Card>
