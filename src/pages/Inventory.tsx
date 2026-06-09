@@ -26,7 +26,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import type { Equipment, AssetStatus, AssetCategory } from '@/types';
-import { Search, Filter, Plus, MonitorSmartphone, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, MonitorSmartphone, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 
@@ -280,7 +280,7 @@ export const Inventory: React.FC = () => {
       {/* Details Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent className="sm:max-w-md border-l border-border bg-card/95 backdrop-blur-xl">
-          <SheetHeader>
+          <SheetHeader className="px-6 pt-6 pb-0">
             <SheetTitle className="text-xl text-foreground flex items-center gap-2">
               <MonitorSmartphone className="w-5 h-5 text-primary" />
               Asset Details
@@ -291,7 +291,7 @@ export const Inventory: React.FC = () => {
           </SheetHeader>
           
           {selectedAsset && (
-            <div className="mt-6 space-y-6">
+            <div className="mt-4 space-y-6 px-6 pb-6">
               <div className="p-4 rounded-lg bg-secondary/50 border border-border">
                 <h3 className="font-semibold text-lg text-foreground">{selectedAsset.name}</h3>
                 <p className="font-mono text-sm text-muted-foreground mt-1">{selectedAsset.serial_number}</p>
