@@ -21,9 +21,14 @@ import type { User, Department, UserRole } from '@/types';
 import { Users as UsersIcon, Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/LanguageContext';
+import { useTableState } from '@/hooks/useTableState';
+import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
 
 export const Users: React.FC = () => {
   const { role } = useAuth();
+  const { language } = useTranslation();
+  const isFr = language === 'fr';
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   
@@ -41,6 +46,12 @@ export const Users: React.FC = () => {
     role: 'Employee' as UserRole,
     department_id: '',
     is_active: true
+  });
+
+  const table = useTableState<User>({
+    data: users,
+    initialPageSize: 10,
+    searchableKeys: ['first_name', 'last_name', 'email', 'role'],
   });
 
   const fetchUsers = async () => {
@@ -74,11 +85,11 @@ export const Users: React.FC = () => {
   const getRoleBadge = (userRole: UserRole) => {
     switch (userRole) {
       case 'Admin':
-        return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">Admin</Badge>;
+        return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">{isFr ? 'Administrateur' : 'Admin'}</Badge>;
       case 'Manager':
-        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">Manager</Badge>;
+        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">{isFr ? 'Gestionnaire' : 'Manager'}</Badge>;
       case 'Employee':
-        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">Employee</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">{isFr ? 'Employé' : 'Employee'}</Badge>;
       default:
         return <Badge variant="outline">{userRole}</Badge>;
     }
@@ -117,12 +128,12 @@ export const Users: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this user account?')) return;
+    if (!window.confirm(isFr ? 'Supprimer ce compte utilisateur ?' : 'Delete this user account?')) return;
     try {
       await apiClient.delete(`/user/${id}`);
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete user.');
+      alert(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete user.'));
     }
   };
 
@@ -130,7 +141,7 @@ export const Users: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     if (!formData.first_name || !formData.last_name || !formData.email) {
-      setErrorMessage('First name, Last name and Email are required.');
+      setErrorMessage(isFr ? 'Le prénom, le nom et l\'adresse e-mail sont requis.' : 'First name, Last name and Email are required.');
       return;
     }
 
@@ -150,7 +161,7 @@ export const Users: React.FC = () => {
       setIsFormOpen(false);
       fetchUsers();
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'An error occurred.');
+      setErrorMessage(err.response?.data?.message || (isFr ? 'Une erreur est survenue.' : 'An error occurred.'));
     }
   };
 
@@ -158,44 +169,65 @@ export const Users: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Users</h1>
-          <p className="text-muted-foreground mt-1">Manage user access rights, roles, and corporate departments.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {isFr ? 'Utilisateurs' : 'Users'}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {isFr ? 'Gérez les droits d\'accès des utilisateurs, leurs rôles et leurs départements.' : 'Manage user access rights, roles, and corporate departments.'}
+          </p>
         </div>
         {role === 'Admin' && (
-          <Button onClick={openAddForm} className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={openAddForm} className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
             <Plus className="w-4 h-4 mr-2" />
-            Add User
+            {isFr ? 'Ajouter un utilisateur' : 'Add User'}
           </Button>
         )}
       </div>
 
+      <DataTableControls
+        searchTerm={table.searchTerm}
+        onSearchChange={table.setSearchTerm}
+        searchPlaceholder={isFr ? 'Rechercher par nom, e-mail, rôle...' : 'Search by name, email, role...'}
+        isFr={isFr}
+      />
+
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-muted-foreground animate-pulse">Loading directory...</div>
+          <div className="text-muted-foreground animate-pulse">
+            {isFr ? 'Chargement de l\'annuaire...' : 'Loading directory...'}
+          </div>
         </div>
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead>Full Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Nom complet' : 'Full Name'} sortKey="first_name" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'E-mail' : 'Email'} sortKey="email" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Rôle' : 'Role'} sortKey="role" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
+                <TableHead>{isFr ? 'Département' : 'Department'}</TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="is_active" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
                 {role === 'Admin' && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {table.paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={role === 'Admin' ? 6 : 5} className="text-center py-8 text-muted-foreground">
-                    No users found.
+                    {isFr ? 'Aucun utilisateur trouvé.' : 'No users found.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((usr) => {
-                  const depName = usr.department?.name || departments.find(d => d.id === usr.department_id)?.name || 'None';
+                table.paginatedData.map((usr) => {
+                  const depName = usr.department?.name || departments.find(d => d.id === usr.department_id)?.name || (isFr ? 'Aucun' : 'None');
 
                   return (
                     <TableRow key={usr.id} className="border-border hover:bg-secondary/30 transition-colors">
@@ -212,7 +244,7 @@ export const Users: React.FC = () => {
                       <TableCell className="text-muted-foreground">{depName}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={usr.is_active ? 'border-emerald-500/20 text-emerald-500' : 'border-rose-500/20 text-rose-500'}>
-                          {usr.is_active ? 'Active' : 'Inactive'}
+                          {usr.is_active ? (isFr ? 'Actif' : 'Active') : (isFr ? 'Inactif' : 'Inactive')}
                         </Badge>
                       </TableCell>
                       {role === 'Admin' && (
@@ -222,19 +254,19 @@ export const Users: React.FC = () => {
                               onClick={() => openEditForm(usr)} 
                               size="sm" 
                               variant="outline" 
-                              className="border-border hover:bg-secondary flex items-center gap-1"
+                              className="border-border hover:bg-secondary flex items-center gap-1 cursor-pointer"
                             >
                               <Edit className="w-3.5 h-3.5" />
-                              Edit
+                              {isFr ? 'Modifier' : 'Edit'}
                             </Button>
                             <Button 
                               onClick={() => handleDelete(usr.id)} 
                               size="sm" 
                               variant="destructive" 
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              Delete
+                              {isFr ? 'Supprimer' : 'Delete'}
                             </Button>
                           </div>
                         </TableCell>
@@ -245,6 +277,16 @@ export const Users: React.FC = () => {
               )}
             </TableBody>
           </Table>
+
+          <DataTablePagination
+            currentPage={table.currentPage}
+            totalPages={table.totalPages}
+            totalFiltered={table.totalFiltered}
+            pageSize={table.pageSize}
+            onPageChange={table.setCurrentPage}
+            onPageSizeChange={table.setPageSize}
+            isFr={isFr}
+          />
         </div>
       )}
 
@@ -253,10 +295,14 @@ export const Users: React.FC = () => {
         <DialogContent className="sm:max-w-md border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-lg text-foreground">
-              {isEditing ? 'Modify Account' : 'Create Account'}
+              {isEditing 
+                ? isFr ? 'Modifier le compte' : 'Modify Account' 
+                : isFr ? 'Créer le compte' : 'Create Account'}
             </DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update profile and roles.' : 'Add new team member. Default password is Password123!'}
+              {isEditing 
+                ? isFr ? 'Mettez à jour le profil et les rôles.' : 'Update profile and roles.' 
+                : isFr ? 'Ajouter un nouveau membre. Le mot de passe par défaut est Password123!' : 'Add new team member. Default password is Password123!'}
             </DialogDescription>
           </DialogHeader>
 
@@ -269,7 +315,9 @@ export const Users: React.FC = () => {
           <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">First Name</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Prénom' : 'First Name'}
+                </label>
                 <input 
                   type="text" 
                   required
@@ -281,7 +329,9 @@ export const Users: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Name</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Nom' : 'Last Name'}
+                </label>
                 <input 
                   type="text" 
                   required
@@ -294,7 +344,9 @@ export const Users: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Address</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isFr ? 'Adresse e-mail' : 'Email Address'}
+              </label>
               <input 
                 type="email" 
                 required
@@ -306,7 +358,9 @@ export const Users: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Phone Number</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isFr ? 'Numéro de téléphone' : 'Phone Number'}
+              </label>
               <input 
                 type="text" 
                 value={formData.phone_number}
@@ -318,26 +372,30 @@ export const Users: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role Access</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Accès rôle' : 'Role Access'}
+                </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
                 >
-                  <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Admin">Admin</option>
+                  <option value="Employee">{isFr ? 'Employé' : 'Employee'}</option>
+                  <option value="Manager">{isFr ? 'Gestionnaire' : 'Manager'}</option>
+                  <option value="Admin">{isFr ? 'Administrateur' : 'Admin'}</option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Département' : 'Department'}
+                </label>
                 <select
                   value={formData.department_id}
                   onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
                 >
-                  <option value="">-- Choose Department --</option>
+                  <option value="">{isFr ? '-- Choisir le département --' : '-- Choose Department --'}</option>
                   {departments.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
@@ -351,19 +409,21 @@ export const Users: React.FC = () => {
                 id="is_active"
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="rounded border-border bg-background text-primary focus:ring-primary h-4 w-4"
+                className="rounded border-border bg-background text-primary focus:ring-primary h-4 w-4 cursor-pointer"
               />
               <label htmlFor="is_active" className="text-sm font-medium text-foreground cursor-pointer select-none">
-                Account Active
+                {isFr ? 'Compte actif' : 'Account Active'}
               </label>
             </div>
 
             <DialogFooter className="pt-4 border-t border-border">
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="border-border">
-                Cancel
+              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="border-border cursor-pointer">
+                {isFr ? 'Annuler' : 'Cancel'}
               </Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                {isEditing ? 'Save Changes' : 'Create User'}
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                {isEditing 
+                  ? isFr ? 'Enregistrer les modifications' : 'Save Changes' 
+                  : isFr ? 'Créer l\'utilisateur' : 'Create User'}
               </Button>
             </DialogFooter>
           </form>

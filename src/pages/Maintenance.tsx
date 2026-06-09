@@ -18,12 +18,18 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import type { MaintenanceRequest, Equipment, MaintenanceStatus, MaintenancePriority } from '@/types';
-import { Wrench, Plus, CheckCircle, XCircle, Edit } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/LanguageContext';
+import { useTableState } from '@/hooks/useTableState';
+import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { getAssetImageUrl } from '@/utils/assetImages';
 
 export const Maintenance: React.FC = () => {
   const { role, userId } = useAuth();
+  const { language } = useTranslation();
+  const isFr = language === 'fr';
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   
@@ -45,6 +51,12 @@ export const Maintenance: React.FC = () => {
     scheduled_date: ''
   });
 
+  const table = useTableState<MaintenanceRequest>({
+    data: requests,
+    initialPageSize: 10,
+    searchableKeys: ['description', 'status', 'priority'],
+  });
+
   const fetchRequests = async () => {
     try {
       const response = await apiClient.get<MaintenanceRequest[]>('/maintenancerequest');
@@ -63,8 +75,6 @@ export const Maintenance: React.FC = () => {
     }
   };
 
-
-
   const loadData = async () => {
     setIsLoading(true);
     await Promise.all([fetchRequests(), fetchEquipments()]);
@@ -78,13 +88,13 @@ export const Maintenance: React.FC = () => {
   const getStatusBadge = (status: MaintenanceStatus) => {
     switch (status) {
       case 'Pending':
-        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">Pending</Badge>;
+        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">{isFr ? 'En attente' : 'Pending'}</Badge>;
       case 'InProgress':
-        return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">In Progress</Badge>;
+        return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">{isFr ? 'En cours' : 'In Progress'}</Badge>;
       case 'Completed':
-        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">Completed</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">{isFr ? 'Terminé' : 'Completed'}</Badge>;
       case 'Cancelled':
-        return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">Cancelled</Badge>;
+        return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">{isFr ? 'Annulé' : 'Cancelled'}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -93,25 +103,25 @@ export const Maintenance: React.FC = () => {
   const getPriorityBadge = (priority: MaintenancePriority) => {
     switch (priority) {
       case 'Low':
-        return <Badge variant="outline" className="border-border text-muted-foreground">Low</Badge>;
+        return <Badge variant="outline" className="border-border text-muted-foreground">{isFr ? 'Basse' : 'Low'}</Badge>;
       case 'Medium':
-        return <Badge variant="outline" className="border-blue-500/20 text-blue-500">Medium</Badge>;
+        return <Badge variant="outline" className="border-blue-500/20 text-blue-500">{isFr ? 'Moyenne' : 'Medium'}</Badge>;
       case 'High':
-        return <Badge variant="outline" className="border-amber-500/20 text-amber-500">High</Badge>;
+        return <Badge variant="outline" className="border-amber-500/20 text-amber-500">{isFr ? 'Haute' : 'High'}</Badge>;
       case 'Critical':
-        return <Badge variant="outline" className="border-rose-500/20 text-rose-500 font-bold animate-pulse">Critical</Badge>;
+        return <Badge variant="outline" className="border-rose-500/20 text-rose-500 font-bold animate-pulse">{isFr ? 'Critique' : 'Critical'}</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
     }
   };
 
   const handleCancel = async (id: string) => {
-    if (!window.confirm('Cancel this maintenance request?')) return;
+    if (!window.confirm(isFr ? 'Annuler cette demande de maintenance ?' : 'Cancel this maintenance request?')) return;
     try {
       await apiClient.post(`/maintenancerequest/${id}/cancel`);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to cancel maintenance request.');
+      alert(err.response?.data?.message || (isFr ? 'Échec de l\'annulation de la demande.' : 'Failed to cancel maintenance request.'));
     }
   };
 
@@ -131,7 +141,7 @@ export const Maintenance: React.FC = () => {
       setIsCompleteOpen(false);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to complete request.');
+      alert(err.response?.data?.message || (isFr ? 'Échec de la validation de la demande.' : 'Failed to complete request.'));
     }
   };
 
@@ -167,11 +177,11 @@ export const Maintenance: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     if (!formData.equipment_id) {
-      setErrorMessage('Please select an equipment.');
+      setErrorMessage(isFr ? 'Veuillez sélectionner un équipement.' : 'Please select an equipment.');
       return;
     }
     if (!formData.description) {
-      setErrorMessage('Description is required.');
+      setErrorMessage(isFr ? 'Une description est requise.' : 'Description is required.');
       return;
     }
 
@@ -179,7 +189,7 @@ export const Maintenance: React.FC = () => {
       const payload = {
         id: isEditing ? formData.id : crypto.randomUUID(),
         equipment_id: formData.equipment_id,
-        requested_by_id: userId || '00000002-0000-0000-0000-000000000001', // fallback if empty
+        requested_by_id: userId || '00000002-0000-0000-0000-000000000001',
         status: formData.status,
         priority: formData.priority,
         description: formData.description,
@@ -194,7 +204,7 @@ export const Maintenance: React.FC = () => {
       setIsFormOpen(false);
       loadData();
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'An error occurred.');
+      setErrorMessage(err.response?.data?.message || (isFr ? 'Une erreur est survenue.' : 'An error occurred.'));
     }
   };
 
@@ -202,49 +212,72 @@ export const Maintenance: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Maintenance Requests</h1>
-          <p className="text-muted-foreground mt-1">Track hardware faults, repairs, and service history.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {isFr ? 'Demandes de maintenance' : 'Maintenance Requests'}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {isFr ? 'Suivi des pannes matérielles, réparations et historique d\'entretien.' : 'Track hardware faults, repairs, and service history.'}
+          </p>
         </div>
         <Button onClick={openCreateForm} className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Plus className="w-4 h-4 mr-2" />
-          Report Fault
+          {isFr ? 'Signaler une panne' : 'Report Fault'}
         </Button>
       </div>
 
+      <DataTableControls
+        searchTerm={table.searchTerm}
+        onSearchChange={table.setSearchTerm}
+        searchPlaceholder={isFr ? 'Rechercher par description, statut, priorité...' : 'Search by description, status, priority...'}
+        isFr={isFr}
+      />
+
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-muted-foreground animate-pulse">Loading tickets...</div>
+          <div className="text-muted-foreground animate-pulse">
+            {isFr ? 'Chargement des tickets...' : 'Loading tickets...'}
+          </div>
         </div>
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{isFr ? 'Nom de l\'équipement' : 'Asset Name'}</TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Priorité' : 'Priority'} sortKey="priority" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Scheduled Date</TableHead>
+                <TableHead>
+                  <SortableHeader label={isFr ? 'Date programmée' : 'Scheduled Date'} sortKey="scheduled_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.length === 0 ? (
+              {table.paginatedData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No maintenance requests found.
+                    {isFr ? 'Aucune demande de maintenance trouvée.' : 'No maintenance requests found.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                requests.map((req) => {
-                  const assetName = req.equipment?.name || equipments.find(e => e.id === req.equipment_id)?.name || 'Unknown Asset';
+                table.paginatedData.map((req) => {
+                  const assetName = req.equipment?.name || equipments.find(e => e.id === req.equipment_id)?.name || (isFr ? 'Équipement inconnu' : 'Unknown Asset');
 
                   return (
                     <TableRow key={req.id} className="border-border hover:bg-secondary/30 transition-colors">
                       <TableCell className="font-medium text-foreground">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded bg-secondary text-muted-foreground">
-                            <Wrench className="w-4 h-4" />
+                          <div className="w-10 h-10 rounded border border-border overflow-hidden bg-secondary flex-shrink-0 flex items-center justify-center">
+                            <img 
+                              src={getAssetImageUrl(req.equipment || equipments.find(e => e.id === req.equipment_id))} 
+                              alt={assetName} 
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           {assetName}
                         </div>
@@ -253,7 +286,7 @@ export const Maintenance: React.FC = () => {
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell className="text-muted-foreground max-w-[300px] truncate">{req.description}</TableCell>
                       <TableCell className="text-muted-foreground text-sm font-mono">
-                        {req.scheduled_date ? new Date(req.scheduled_date).toLocaleDateString() : 'Unscheduled'}
+                        {req.scheduled_date ? new Date(req.scheduled_date).toLocaleDateString(isFr ? 'fr-FR' : 'en-US') : (isFr ? 'Non planifié' : 'Unscheduled')}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
@@ -262,10 +295,10 @@ export const Maintenance: React.FC = () => {
                               onClick={() => openCompleteModal(req)} 
                               size="sm" 
                               variant="outline" 
-                              className="border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 flex items-center gap-1"
+                              className="border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 flex items-center gap-1 cursor-pointer"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
-                              Complete
+                              {isFr ? 'Terminer' : 'Complete'}
                             </Button>
                           )}
                           {(req.status === 'Pending' || req.status === 'InProgress') && (
@@ -273,10 +306,10 @@ export const Maintenance: React.FC = () => {
                               onClick={() => handleCancel(req.id)} 
                               size="sm" 
                               variant="outline" 
-                              className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10 flex items-center gap-1"
+                              className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10 flex items-center gap-1 cursor-pointer"
                             >
                               <XCircle className="w-3.5 h-3.5" />
-                              Cancel
+                              {isFr ? 'Annuler' : 'Cancel'}
                             </Button>
                           )}
                           {(role === 'Admin' || role === 'Manager') && (
@@ -284,10 +317,10 @@ export const Maintenance: React.FC = () => {
                               onClick={() => openEditForm(req)} 
                               size="sm" 
                               variant="outline" 
-                              className="border-border text-foreground hover:bg-secondary/50 flex items-center gap-1"
+                              className="border-border text-foreground hover:bg-secondary/50 flex items-center gap-1 cursor-pointer"
                             >
                               <Edit className="w-3.5 h-3.5" />
-                              Edit
+                              {isFr ? 'Modifier' : 'Edit'}
                             </Button>
                           )}
                         </div>
@@ -298,6 +331,16 @@ export const Maintenance: React.FC = () => {
               )}
             </TableBody>
           </Table>
+
+          <DataTablePagination
+            currentPage={table.currentPage}
+            totalPages={table.totalPages}
+            totalFiltered={table.totalFiltered}
+            pageSize={table.pageSize}
+            onPageChange={table.setCurrentPage}
+            onPageSizeChange={table.setPageSize}
+            isFr={isFr}
+          />
         </div>
       )}
 
@@ -306,10 +349,14 @@ export const Maintenance: React.FC = () => {
         <DialogContent className="sm:max-w-md border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-lg text-foreground">
-              {isEditing ? 'Modify Maintenance Request' : 'Report Equipment Issue'}
+              {isEditing 
+                ? isFr ? 'Modifier la demande de maintenance' : 'Modify Maintenance Request' 
+                : isFr ? 'Signaler un problème d\'équipement' : 'Report Equipment Issue'}
             </DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update the details for this maintenance ticket.' : 'Create a support ticket for repair or troubleshooting.'}
+              {isEditing 
+                ? isFr ? 'Mettez à jour les détails de ce ticket de maintenance.' : 'Update the details for this maintenance ticket.' 
+                : isFr ? 'Créez un ticket de support pour réparation ou dépannage.' : 'Create a support ticket for repair or troubleshooting.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -321,13 +368,15 @@ export const Maintenance: React.FC = () => {
 
           <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Select Equipment</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isFr ? 'Sélectionner l\'équipement' : 'Select Equipment'}
+              </label>
               <select
                 value={formData.equipment_id}
                 onChange={(e) => setFormData({ ...formData, equipment_id: e.target.value })}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
               >
-                <option value="">-- Choose Equipment --</option>
+                <option value="">{isFr ? '-- Choisir l\'équipement --' : '-- Choose Equipment --'}</option>
                 {equipments.map(e => (
                   <option key={e.id} value={e.id}>{e.name} ({e.serial_number})</option>
                 ))}
@@ -336,37 +385,37 @@ export const Maintenance: React.FC = () => {
 
             {isEditing && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Statut' : 'Status'}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as MaintenanceStatus })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="InProgress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
+                  <option value="Pending">{isFr ? 'En attente' : 'Pending'}</option>
+                  <option value="InProgress">{isFr ? 'En cours' : 'In Progress'}</option>
+                  <option value="Completed">{isFr ? 'Terminé' : 'Completed'}</option>
+                  <option value="Cancelled">{isFr ? 'Annulé' : 'Cancelled'}</option>
                 </select>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Priority Level</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Niveau de priorité' : 'Priority Level'}</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as MaintenancePriority })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
                 >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
+                  <option value="Low">{isFr ? 'Basse' : 'Low'}</option>
+                  <option value="Medium">{isFr ? 'Moyenne' : 'Medium'}</option>
+                  <option value="High">{isFr ? 'Haute' : 'High'}</option>
+                  <option value="Critical">{isFr ? 'Critique' : 'Critical'}</option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule Date</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Date programmée' : 'Schedule Date'}</label>
                 <input 
                   type="date" 
                   value={formData.scheduled_date}
@@ -377,21 +426,21 @@ export const Maintenance: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Issue Description</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Description du problème' : 'Issue Description'}</label>
               <textarea 
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Explain the fault or requested maintenance (e.g. keyboard malfunctioning, screen flicker)" 
+                placeholder={isFr ? 'Expliquez la panne ou la maintenance requise (ex: dysfonctionnement du clavier, écran qui clignote)' : 'Explain the fault or requested maintenance (e.g. keyboard malfunctioning, screen flicker)'} 
                 className="w-full h-20 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
               />
             </div>
 
             <DialogFooter className="pt-4 border-t border-border">
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="border-border">
-                Cancel
+              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="border-border cursor-pointer">
+                {isFr ? 'Annuler' : 'Cancel'}
               </Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Submit Ticket
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                {isFr ? 'Soumettre le ticket' : 'Submit Ticket'}
               </Button>
             </DialogFooter>
           </form>
@@ -402,30 +451,34 @@ export const Maintenance: React.FC = () => {
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
         <DialogContent className="sm:max-w-md border-border bg-card">
           <DialogHeader>
-            <DialogTitle className="text-lg text-foreground">Mark Ticket as Completed</DialogTitle>
+            <DialogTitle className="text-lg text-foreground">
+              {isFr ? 'Marquer le ticket comme terminé' : 'Mark Ticket as Completed'}
+            </DialogTitle>
             <DialogDescription>
-              Write down details of the solution implemented to repair the asset.
+              {isFr ? 'Notez les détails de la solution mise en œuvre pour réparer l\'équipement.' : 'Write down details of the solution implemented to repair the asset.'}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCompleteSubmit} className="space-y-4 pt-2">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Technician Notes</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isFr ? 'Notes du technicien' : 'Technician Notes'}
+              </label>
               <textarea 
                 required
                 value={techNotes}
                 onChange={(e) => setTechNotes(e.target.value)}
-                placeholder="Details about hardware replacement, system clean, or repair details..." 
+                placeholder={isFr ? 'Détails sur le remplacement de matériel, nettoyage du système ou détails de la réparation...' : 'Details about hardware replacement, system clean, or repair details...'} 
                 className="w-full h-24 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
               />
             </div>
 
             <DialogFooter className="pt-4 border-t border-border">
-              <Button type="button" variant="outline" onClick={() => setIsCompleteOpen(false)} className="border-border">
-                Cancel
+              <Button type="button" variant="outline" onClick={() => setIsCompleteOpen(false)} className="border-border cursor-pointer">
+                {isFr ? 'Annuler' : 'Cancel'}
               </Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Submit Resolution
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                {isFr ? 'Soumettre la résolution' : 'Submit Resolution'}
               </Button>
             </DialogFooter>
           </form>

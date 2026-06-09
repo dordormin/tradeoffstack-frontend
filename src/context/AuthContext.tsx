@@ -27,15 +27,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check local storage on mount
-    const token = localStorage.getItem('jwt_token');
-    const role = localStorage.getItem('user_role') as UserRole | null;
-    const userId = localStorage.getItem('user_id');
+    const initAuth = async () => {
+      const token = localStorage.getItem('jwt_token');
+      const role = localStorage.getItem('user_role') as UserRole | null;
+      const userId = localStorage.getItem('user_id');
 
-    if (token && role && userId) {
-      setAuthState({ isAuthenticated: true, role, token, userId, isLoading: false });
-    } else {
-      setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false });
-    }
+      if (token && role && userId) {
+        console.log('initAuth: fetching user profile...');
+        const userDetails = await fetchUserProfile(userId, token);
+        console.log('initAuth: fetchUserProfile done. userDetails:', userDetails ? 'found' : 'null');
+        setAuthState({
+          isAuthenticated: true,
+          role,
+          token,
+          userId,
+          user: userDetails,
+          isLoading: false,
+        });
+      } else {
+        setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false, user: null });
+      }
+    };
+
+    initAuth();
 
     // Global listener for 401 Unauthorized from Axios
     const handleUnauthorized = () => {
@@ -46,18 +60,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
-  const login = (token: string, role: UserRole, userId: string) => {
+  const login = async (token: string, role: UserRole, userId: string) => {
     localStorage.setItem('jwt_token', token);
     localStorage.setItem('user_role', role);
     localStorage.setItem('user_id', userId);
-    setAuthState({ isAuthenticated: true, role, token, userId, isLoading: false });
+    console.log('login: fetching user profile...');
+    const userDetails = await fetchUserProfile(userId, token);
+    console.log('login: fetchUserProfile done. userDetails:', userDetails ? 'found' : 'null');
+
+    setAuthState({
+      isAuthenticated: true,
+      role,
+      token,
+      userId,
+      user: userDetails,
+      isLoading: false,
+    });
+    console.log('login: set isAuthenticated to true');
   };
 
   const logout = () => {
+    console.log('logout called');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_role');
     localStorage.removeItem('user_id');
-    setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false });
+    setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false, user: null });
   };
 
   return (
