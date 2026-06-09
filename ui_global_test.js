@@ -3,15 +3,18 @@ import fs from 'fs';
 import path from 'path';
 
 (async () => {
-  const artifactDir = '/home/dordor/.gemini/antigravity/brain/ecff5d0a-726f-4044-bf24-9ddfd2ba3d53';
+  const artifactDir = process.env.CI 
+    ? path.join(process.cwd(), 'screenshots') 
+    : '/home/dordor/.gemini/antigravity/brain/ecff5d0a-726f-4044-bf24-9ddfd2ba3d53';
   if (!fs.existsSync(artifactDir)){
     fs.mkdirSync(artifactDir, { recursive: true });
   }
 
-  console.log('Starting Global Playwright E2E Test Suite (Headful)...');
+  const isHeadless = process.env.CI ? true : false;
+  console.log(`Starting Global Playwright E2E Test Suite (${isHeadless ? 'Headless' : 'Headful'})...`);
   const browser = await chromium.launch({ 
-    headless: false, 
-    slowMo: 1000 // Slow motion to let you follow the live execution easily
+    headless: isHeadless, 
+    slowMo: isHeadless ? 0 : 1000 // Slow motion to let you follow the live execution easily
   });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 }

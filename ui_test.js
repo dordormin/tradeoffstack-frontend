@@ -3,15 +3,18 @@ import fs from 'fs';
 import path from 'path';
 
 (async () => {
-  const artifactDir = '/home/dordor/.gemini/antigravity/brain/ecff5d0a-726f-4044-bf24-9ddfd2ba3d53';
+  const artifactDir = process.env.CI 
+    ? path.join(process.cwd(), 'screenshots') 
+    : '/home/dordor/.gemini/antigravity/brain/ecff5d0a-726f-4044-bf24-9ddfd2ba3d53';
   if (!fs.existsSync(artifactDir)){
     fs.mkdirSync(artifactDir, { recursive: true });
   }
 
-  console.log('Starting Playwright Browser (Headful)...');
+  const isHeadless = process.env.CI ? true : false;
+  console.log(`Starting Playwright Browser (${isHeadless ? 'Headless' : 'Headful'})...`);
   const browser = await chromium.launch({ 
-    headless: false, 
-    slowMo: 800 // pauses for 800ms between actions to let you follow visually
+    headless: isHeadless, 
+    slowMo: isHeadless ? 0 : 800 // pauses for 800ms between actions to let you follow visually
   });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 }

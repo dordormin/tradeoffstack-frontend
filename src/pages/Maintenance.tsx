@@ -17,7 +17,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import type { MaintenanceRequest, Equipment, User, MaintenanceStatus, MaintenancePriority } from '@/types';
+import type { MaintenanceRequest, Equipment, MaintenanceStatus, MaintenancePriority } from '@/types';
 import { Wrench, Plus, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +26,6 @@ export const Maintenance: React.FC = () => {
   const { role, userId } = useAuth();
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -64,20 +63,11 @@ export const Maintenance: React.FC = () => {
     }
   };
 
-  const fetchUsers = async () => {
-    if (role === 'Admin' || role === 'Manager') {
-      try {
-        const response = await apiClient.get<User[]>('/user');
-        setUsers(response.data || []);
-      } catch (err) {
-        console.error('Failed to fetch users', err);
-      }
-    }
-  };
+
 
   const loadData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchRequests(), fetchEquipments(), fetchUsers()]);
+    await Promise.all([fetchRequests(), fetchEquipments()]);
     setIsLoading(false);
   };
 
