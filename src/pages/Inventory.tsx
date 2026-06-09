@@ -33,6 +33,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { getAssetImageUrl } from '@/utils/assetImages';
 import { SortableHeader, DataTablePagination } from '@/components/DataTableControls';
 import type { SortConfig } from '@/hooks/useTableState';
+import { ImageUpload } from '@/components/ImageUpload';
 
 export const Inventory: React.FC = () => {
   const { role } = useAuth();
@@ -63,59 +64,6 @@ export const Inventory: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [imageSourceType, setImageSourceType] = useState<'upload' | 'url'>('upload');
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      await uploadFile(file);
-    }
-  };
-
-  const uploadFile = async (file: File) => {
-    setIsUploading(true);
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-    uploadData.append('folder', 'Equipments');
-
-    try {
-      const response = await apiClient.post<{ image_url: string; filename: string }>('/upload', uploadData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      setFormData(prev => ({
-        ...prev,
-        image_url: response.data.image_url,
-        image_url_https: response.data.image_url,
-        image: response.data.filename
-      }));
-    } catch (err: any) {
-      console.error('Upload failed', err);
-      alert(isFr ? 'Le téléchargement de l\'image a échoué.' : 'Image upload failed.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await uploadFile(file);
-    }
-  };
 
   const fetchInventory = async () => {
     setIsLoading(true);
@@ -702,52 +650,12 @@ export const Inventory: React.FC = () => {
                 </div>
 
                 {imageSourceType === 'upload' ? (
-                  <div className="space-y-3">
-                    <div 
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => document.getElementById('file-upload-input')?.click()}
-                      className={`relative border border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${
-                        isDragging 
-                          ? 'border-primary bg-primary/5 scale-[0.99]' 
-                          : 'border-border bg-secondary/10 hover:bg-secondary/20 hover:border-primary/40'
-                      }`}
-                    >
-                      <input 
-                        id="file-upload-input"
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      
-                      <div className="p-3 rounded-full bg-primary/10 text-primary">
-                        <UploadCloud className="w-6 h-6 animate-pulse" />
-                      </div>
-                      
-                      <div className="text-center">
-                        <p className="text-sm font-semibold text-foreground">
-                          {isFr ? 'Glissez-déposez votre image ici' : 'Drag & drop your image here'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {isFr ? 'ou cliquez pour parcourir vos fichiers' : 'or click to browse your files'}
-                        </p>
-                      </div>
-                      
-                      {isUploading && (
-                        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
-                          <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {formData.image_url && (
-                      <div className="relative w-20 h-20 rounded border border-border overflow-hidden bg-secondary">
-                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
+                  <ImageUpload 
+                    folder="Equipments"
+                    defaultImage={formData.image_url}
+                    onUploadSuccess={(url) => setFormData({ ...formData, image_url: url, image_url_https: url, image: url })}
+                    onUploadError={(error) => setErrorMessage(error)}
+                  />
                 ) : (
                   <input 
                     type="text" 
