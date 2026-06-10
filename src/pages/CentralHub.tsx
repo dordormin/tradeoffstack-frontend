@@ -63,8 +63,8 @@ export const CentralHub: React.FC = () => {
       id: 'identity-manager',
       name: isFr ? 'Portail Identités' : 'Identity & Access',
       description: isFr
-        ? 'Gestion des rôles, permissions de sécurité et annuaire d\'entreprise centralisé.'
-        : 'Enterprise-grade identity access, single sign-on, and RBAC governance.',
+        ? 'Gestion des rôles, permissions de sécurité et annuaire centralisé.'
+        : 'Secure identity access, single sign-on, and RBAC governance.',
       icon: Users,
       active: false,
       gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
@@ -199,7 +199,7 @@ export const CentralHub: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
             <AppWindow className="w-3.5 h-3.5" />
-            {isFr ? 'Serveur Central Enterprise' : 'Enterprise Central Hub'}
+            {isFr ? 'Portail Central' : 'Central Hub'}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
             {isFr ? 'Portail Applications' : 'Application Central'}
@@ -253,8 +253,9 @@ export const CentralHub: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t border-border/40 text-center text-xs text-muted-foreground">
-        <p>© 2026 TradeOffStack. All rights reserved. Enterprise Suite v2.0.</p>
+      <footer className="py-6 border-t border-border/40 text-center text-xs text-muted-foreground space-y-1">
+        <p>© 2026 TradeOffStack. All rights reserved. Suite v2.0.</p>
+        <p className="font-medium text-primary/80">{isFr ? 'Fait par Dordor Minetdi' : 'Made by Dordor Minetdi'}</p>
       </footer>
     </div>
   );

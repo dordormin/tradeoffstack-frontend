@@ -23,9 +23,14 @@ export function Logo({ className = '', showText = true }: LogoProps) {
       
       {/* Brand Text */}
       {showText && (
-        <span className="text-xl tracking-tight text-foreground font-extrabold uppercase font-mono">
-          TradeOff<span className="text-primary font-black">Stack</span>
-        </span>
+        <div className="flex flex-col">
+          <span className="text-xl tracking-tight text-foreground font-extrabold uppercase font-mono leading-none">
+            TradeOff<span className="text-primary font-black">Stack</span>
+          </span>
+          <span className="text-[9px] text-muted-foreground/60 font-semibold tracking-wider uppercase mt-1 self-start">
+            by Dordor Minetdi
+          </span>
+        </div>
       )}
     </div>
   );

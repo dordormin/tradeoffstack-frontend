@@ -362,7 +362,7 @@ const LoginForm = () => {
             IT Asset Lifecycle Management, Orchestrated.
           </h1>
           <p className="text-slate-300 text-base max-w-lg">
-            Track hardware parameters, automate reservation lifecycles, and coordinate technical interventions inside a unified glassmorphic enterprise dashboard.
+            Track hardware parameters, automate reservation lifecycles, and coordinate technical interventions inside a unified glassmorphic dashboard.
           </p>
           
           <div className="pt-4 grid grid-cols-3 gap-6 border-t border-white/10 max-w-md">
