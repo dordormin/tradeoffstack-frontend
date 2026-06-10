@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
@@ -385,9 +385,33 @@ const LoginForm = () => {
   );
 };
 
+const ThemeInitializer = () => {
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isAuthenticated) {
+      const theme = localStorage.getItem('system_theme') || 'dark';
+      root.className = '';
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else if (theme === 'cyberpunk') {
+        root.classList.add('dark', 'theme-cyberpunk');
+      }
+    } else {
+      // Default to neutral dark mode when logged out (e.g. login screen)
+      root.className = '';
+      root.classList.add('dark');
+    }
+  }, [isAuthenticated]);
+
+  return null;
+};
+
 function App() {
   return (
     <AuthProvider>
+      <ThemeInitializer />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginForm />} />
