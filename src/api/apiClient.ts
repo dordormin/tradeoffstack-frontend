@@ -1,8 +1,22 @@
 import axios from 'axios';
 
+// Helper to dynamically resolve API base URL depending on deployment context
+const getBaseURL = (): string => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Check if hosted on production domain
+    if (hostname.includes('dordorapps.tech') || (!['localhost', '127.0.0.1'].includes(hostname) && !hostname.startsWith('192.168.') && !hostname.startsWith('10.') && !hostname.startsWith('172.'))) {
+      return '/api';
+    }
+    // Fallback for local network access (e.g. testing via local IP on mobile) or localhost dev
+    return `http://${hostname}:5000/api`;
+  }
+  return 'http://localhost:5000/api';
+};
+
 // Create a centralized Axios instance
 export const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
