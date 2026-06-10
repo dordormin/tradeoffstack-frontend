@@ -26,7 +26,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import type { Equipment, AssetStatus, AssetCategory } from '@/types';
-import { Search, Plus, MonitorSmartphone, Edit, Trash2, LayoutGrid, List, UploadCloud } from 'lucide-react';
+import { Search, Plus, MonitorSmartphone, Edit, Trash2, LayoutGrid, List } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';

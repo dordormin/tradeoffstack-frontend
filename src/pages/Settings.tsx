@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { apiClient } from '@/api/apiClient';
 import type { Department } from '@/types';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   User, 
   Lock, 
@@ -23,14 +23,12 @@ import {
   UploadCloud
 } from 'lucide-react';
 
-interface SettingsProps {
-  view?: 'profile' | 'system';
-}
-
-export const Settings: React.FC<SettingsProps> = ({ view = 'profile' }) => {
+export const Settings: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const { language, setLanguage, t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const view = location.pathname.includes('/system') ? 'system' : 'profile';
   
   // Profile form state
   const [profileData, setProfileData] = useState({

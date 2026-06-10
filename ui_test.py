@@ -34,10 +34,20 @@ def run_ui_test():
         # Click login button
         page.click("button:has-text('Sign In to Account')")
         
-        # Wait for redirect
-        print("3. Waiting for dashboard redirection...")
-        page.wait_for_url("**/dashboard")
+        # Wait for redirect to Central Hub
+        print("3. Waiting for Central Hub redirection...")
+        page.wait_for_url("**/hub")
         time.sleep(1) # wait for page animations/renders to settle
+        
+        hub_screenshot = os.path.join(artifact_dir, "test_step2_hub.png")
+        page.screenshot(path=hub_screenshot)
+        print(f"   Hub screenshot saved to {hub_screenshot}")
+
+        # Click on Asset Portal card
+        print("3b. Clicking Asset Portal...")
+        page.click("text=Asset Portal")
+        page.wait_for_url("**/dashboard")
+        time.sleep(1)
         
         # Take dashboard screenshot
         dashboard_screenshot = os.path.join(artifact_dir, "test_step2_dashboard.png")
