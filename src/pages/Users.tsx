@@ -22,6 +22,7 @@ import { Users as UsersIcon, Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { useTableState } from '@/hooks/useTableState';
 import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
 
@@ -29,13 +30,13 @@ export const Users: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { success, error } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
 
   const [formData, setFormData] = useState({
     id: '',
@@ -59,7 +60,7 @@ export const Users: React.FC = () => {
       const response = await apiClient.get<User[]>('/user');
       setUsers(response.data || []);
     } catch (err) {
-      console.error('Failed to load users', err);
+      error('Failed to load users');
     }
   };
 
@@ -68,7 +69,7 @@ export const Users: React.FC = () => {
       const response = await apiClient.get<Department[]>('/department');
       setDepartments(response.data || []);
     } catch (err) {
-      console.error('Failed to load departments', err);
+      error('Failed to load departments');
     }
   };
 
@@ -107,7 +108,6 @@ export const Users: React.FC = () => {
       department_id: '',
       is_active: true
     });
-    setErrorMessage('');
     setIsFormOpen(true);
   };
 
@@ -123,7 +123,6 @@ export const Users: React.FC = () => {
       department_id: usr.department_id || '',
       is_active: usr.is_active
     });
-    setErrorMessage('');
     setIsFormOpen(true);
   };
 
@@ -131,17 +130,17 @@ export const Users: React.FC = () => {
     if (!window.confirm(isFr ? 'Supprimer ce compte utilisateur ?' : 'Delete this user account?')) return;
     try {
       await apiClient.delete(`/user/${id}`);
+      success(isFr ? 'Utilisateur supprimé avec succès.' : 'User deleted successfully.');
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete user.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete user.'));
     }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
     if (!formData.first_name || !formData.last_name || !formData.email) {
-      setErrorMessage(isFr ? 'Le prénom, le nom et l\'adresse e-mail sont requis.' : 'First name, Last name and Email are required.');
+      error(isFr ? 'Le prénom, le nom et l\'adresse e-mail sont requis.' : 'First name, Last name and Email are required.');
       return;
     }
 
@@ -155,13 +154,15 @@ export const Users: React.FC = () => {
 
       if (isEditing) {
         await apiClient.put(`/user/${formData.id}`, payload);
+        success(isFr ? 'Utilisateur mis à jour avec succès.' : 'User updated successfully.');
       } else {
         await apiClient.post('/user', payload);
+        success(isFr ? 'Utilisateur créé avec succès.' : 'User created successfully.');
       }
       setIsFormOpen(false);
       fetchUsers();
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || (isFr ? 'Une erreur est survenue.' : 'An error occurred.'));
+      error(err.response?.data?.message || (isFr ? 'Une erreur est survenue.' : 'An error occurred.'));
     }
   };
 
@@ -305,12 +306,6 @@ export const Users: React.FC = () => {
                 : isFr ? 'Ajouter un nouveau membre. Le mot de passe par défaut est Password123!' : 'Add new team member. Default password is Password123!'}
             </DialogDescription>
           </DialogHeader>
-
-          {errorMessage && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive font-medium">
-              {errorMessage}
-            </div>
-          )}
 
           <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-4">

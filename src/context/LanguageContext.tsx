@@ -6,6 +6,7 @@ export const translations = {
   en: {
     dashboard: "Dashboard",
     inventory: "Inventory",
+    software: "Software Licenses",
     myGear: "My Gear",
     reservations: "Reservations",
     maintenance: "Maintenance",
@@ -66,6 +67,7 @@ export const translations = {
   fr: {
     dashboard: "Tableau de bord",
     inventory: "Inventaire",
+    software: "Licences",
     myGear: "Mon équipement",
     reservations: "Réservations",
     maintenance: "Maintenance",

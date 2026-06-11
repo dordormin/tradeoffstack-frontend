@@ -25,8 +25,8 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import type { Equipment, AssetStatus, AssetCategory } from '@/types';
-import { Search, Plus, MonitorSmartphone, Edit, Trash2, LayoutGrid, List } from 'lucide-react';
+import type { Equipment, AssetStatus, AssetCategory, DepreciationMethod, SoftwareLicense } from '@/types';
+import { Search, Plus, MonitorSmartphone, Edit, Trash2, LayoutGrid, List, KeySquare, Loader2 } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
@@ -57,10 +57,17 @@ export const Inventory: React.FC = () => {
     image: '',
     image_url: '',
     image_url_https: '',
-    purchase_date: new Date().toISOString().split('T')[0]
+    purchase_date: new Date().toISOString().split('T')[0],
+    depreciation_method: 'None' as DepreciationMethod,
+    salvage_value: 0,
+    useful_life_years: 0,
+    warranty_expiration_date: ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [inventory, setInventory] = useState<Equipment[]>([]);
+  const [activeLicenses, setActiveLicenses] = useState<SoftwareLicense[]>([]);
+  const [isAssigningMode, setIsAssigningMode] = useState(false);
+  const [selectedLicenseToAssign, setSelectedLicenseToAssign] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [imageSourceType, setImageSourceType] = useState<'upload' | 'url'>('upload');
@@ -77,8 +84,18 @@ export const Inventory: React.FC = () => {
     }
   };
 
+  const fetchActiveLicenses = async () => {
+    try {
+      const response = await apiClient.get<SoftwareLicense[]>('/SoftwareLicense/active');
+      setActiveLicenses(response.data || []);
+    } catch (err) {
+      console.error('Failed to load active licenses', err);
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
+    fetchActiveLicenses();
   }, []);
 
   const getStatusBadge = (status: AssetStatus) => {
@@ -109,6 +126,8 @@ export const Inventory: React.FC = () => {
 
   const handleRowClick = (asset: Equipment) => {
     setSelectedAsset(asset);
+    setIsAssigningMode(false);
+    setSelectedLicenseToAssign('');
     setIsSheetOpen(true);
   };
 
@@ -126,7 +145,11 @@ export const Inventory: React.FC = () => {
       image: '',
       image_url: '',
       image_url_https: '',
-      purchase_date: new Date().toISOString().split('T')[0]
+      purchase_date: new Date().toISOString().split('T')[0],
+      depreciation_method: 'None' as DepreciationMethod,
+      salvage_value: 0,
+      useful_life_years: 0,
+      warranty_expiration_date: ''
     });
     setErrorMessage('');
     setIsFormOpen(true);
@@ -150,7 +173,11 @@ export const Inventory: React.FC = () => {
       image: asset.image || '',
       image_url: asset.image_url || '',
       image_url_https: asset.image_url_https || '',
-      purchase_date: asset.purchase_date ? asset.purchase_date.split('T')[0] : new Date().toISOString().split('T')[0]
+      purchase_date: asset.purchase_date ? asset.purchase_date.split('T')[0] : new Date().toISOString().split('T')[0],
+      depreciation_method: asset.depreciation_method || 'None',
+      salvage_value: asset.salvage_value || 0,
+      useful_life_years: asset.useful_life_years || 0,
+      warranty_expiration_date: asset.warranty_expiration_date ? asset.warranty_expiration_date.split('T')[0] : ''
     });
     setErrorMessage('');
     setIsSheetOpen(false);
@@ -175,7 +202,8 @@ export const Inventory: React.FC = () => {
       const payload = {
         ...formData,
         id: isEditing ? formData.id : crypto.randomUUID(),
-        purchase_date: formData.purchase_date ? new Date(formData.purchase_date).toISOString() : null
+        purchase_date: formData.purchase_date ? new Date(formData.purchase_date).toISOString() : null,
+        warranty_expiration_date: formData.warranty_expiration_date ? new Date(formData.warranty_expiration_date).toISOString() : null
       };
 
       if (isEditing) {
@@ -187,6 +215,37 @@ export const Inventory: React.FC = () => {
       fetchInventory();
     } catch (err: any) {
       setErrorMessage(err.response?.data?.message || (isFr ? 'Une erreur est survenue lors de la soumission.' : 'An error occurred during submission.'));
+    }
+  };
+
+  const handleAssignLicense = async () => {
+    if (!selectedAsset || !selectedLicenseToAssign) return;
+    try {
+      await apiClient.post(`/equipment/${selectedAsset.id}/licenses/${selectedLicenseToAssign}`);
+      setIsAssigningMode(false);
+      setSelectedLicenseToAssign('');
+      
+      // Update local state for immediate feedback
+      const response = await apiClient.get<Equipment>(`/equipment/${selectedAsset.id}`);
+      setSelectedAsset(response.data);
+      fetchInventory();
+    } catch (err: any) {
+      alert(err.response?.data?.message || (isFr ? 'Échec de l\'attribution de la licence.' : 'Failed to assign license.'));
+    }
+  };
+
+  const handleRevokeLicense = async (licenseId: string) => {
+    if (!selectedAsset) return;
+    if (!window.confirm(isFr ? 'Voulez-vous vraiment révoquer cette licence ?' : 'Are you sure you want to revoke this license?')) return;
+    try {
+      await apiClient.delete(`/equipment/${selectedAsset.id}/licenses/${licenseId}`);
+      
+      // Update local state for immediate feedback
+      const response = await apiClient.get<Equipment>(`/equipment/${selectedAsset.id}`);
+      setSelectedAsset(response.data);
+      fetchInventory();
+    } catch (err: any) {
+      alert(err.response?.data?.message || (isFr ? 'Échec de la révocation de la licence.' : 'Failed to revoke license.'));
     }
   };
 
@@ -317,9 +376,20 @@ export const Inventory: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-muted-foreground animate-pulse">
-            {isFr ? 'Chargement de la base de données...' : 'Loading assets database...'}
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full blur-xl bg-primary/20 animate-pulse"></div>
+            <div className="w-16 h-16 border-4 border-secondary rounded-full flex items-center justify-center relative bg-card shadow-xl">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <h3 className="text-lg font-semibold text-foreground tracking-tight">
+              {isFr ? 'Chargement de l\'inventaire...' : 'Loading Asset Inventory...'}
+            </h3>
+            <p className="text-sm text-muted-foreground animate-pulse">
+              {isFr ? 'Synchronisation avec la base de données sécurisée' : 'Syncing with the secure database'}
+            </p>
           </div>
         </div>
       ) : viewMode === 'list' ? (
@@ -440,7 +510,7 @@ export const Inventory: React.FC = () => {
 
       {/* Details Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-md border-l border-border bg-card/95 backdrop-blur-xl">
+        <SheetContent className="sm:max-w-md border-l border-border bg-card/95 backdrop-blur-xl overflow-y-auto pb-20">
           <SheetHeader className="px-6 pt-6 pb-0">
             <SheetTitle className="text-xl text-foreground flex items-center gap-2">
               <MonitorSmartphone className="w-5 h-5 text-primary" />
@@ -487,12 +557,98 @@ export const Inventory: React.FC = () => {
                       {selectedAsset.purchase_date ? new Date(selectedAsset.purchase_date).toLocaleDateString(isFr ? 'fr-FR' : 'en-US') : 'N/A'}
                     </p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{isFr ? 'Valeur comptable actuelle' : 'Current Book Value'}</p>
+                    <p className="text-sm font-mono text-foreground mt-0.5">
+                      ${selectedAsset.current_book_value?.toLocaleString(undefined, { minimumFractionDigits: 2 }) ?? selectedAsset.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{isFr ? 'Valeur résiduelle' : 'Salvage Value'}</p>
+                    <p className="text-sm font-mono text-foreground mt-0.5">
+                      ${selectedAsset.salvage_value?.toLocaleString(undefined, { minimumFractionDigits: 2 }) ?? '0.00'}
+                    </p>
+                  </div>
                   <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">Description</p>
                     <p className="text-sm text-foreground mt-0.5">{selectedAsset.description || (isFr ? 'Aucune description fournie.' : 'No description provided.')}</p>
                   </div>
                 </div>
               </div>
+
+              {(selectedAsset.category === 'Laptop' || selectedAsset.category === 'None') && (
+                <div className="space-y-3 pt-3 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <KeySquare className="w-4 h-4" />
+                      {isFr ? 'Logiciels assignés' : 'Assigned Software'}
+                    </h4>
+                    {(role === 'Admin' || role === 'Manager') && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsAssigningMode(!isAssigningMode)}
+                        className="h-7 text-xs"
+                      >
+                        {isAssigningMode ? (isFr ? 'Annuler' : 'Cancel') : (isFr ? 'Assigner' : 'Assign')}
+                      </Button>
+                    )}
+                  </div>
+
+                  {isAssigningMode && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-secondary/50 border border-border rounded-lg animate-in slide-in-from-top-2">
+                      <select
+                        value={selectedLicenseToAssign}
+                        onChange={(e) => setSelectedLicenseToAssign(e.target.value)}
+                        className="flex-1 w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary truncate"
+                      >
+                        <option value="">{isFr ? 'Sélectionner une licence...' : 'Select a license...'}</option>
+                        {activeLicenses.filter(l => !selectedAsset.equipment_licenses?.some(el => el.software_license_id === l.id)).map(license => (
+                          <option key={license.id} value={license.id}>
+                            {license.name} ({license.license_key})
+                          </option>
+                        ))}
+                      </select>
+                      <Button 
+                        size="sm" 
+                        onClick={handleAssignLicense}
+                        disabled={!selectedLicenseToAssign}
+                        className="bg-primary text-primary-foreground h-8 shrink-0"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        {isFr ? 'Ajouter' : 'Add'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {(!selectedAsset.equipment_licenses || selectedAsset.equipment_licenses.length === 0) ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      {isFr ? 'Aucun logiciel assigné.' : 'No software assigned.'}
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {selectedAsset.equipment_licenses.map((el) => (
+                        <li key={el.software_license_id} className="flex items-center justify-between p-2 rounded-md bg-background border border-border/60">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-foreground">{el.software_license?.name}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{el.software_license?.license_key}</span>
+                          </div>
+                          {(role === 'Admin' || role === 'Manager') && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleRevokeLicense(el.software_license_id)}
+                              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {(role === 'Admin' || role === 'Manager') && (
                 <div className="pt-6 border-t border-border flex justify-end gap-3">
@@ -616,6 +772,61 @@ export const Inventory: React.FC = () => {
                   type="date" 
                   value={formData.purchase_date}
                   onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Méthode d\'amortissement' : 'Depreciation Method'}
+                </label>
+                <select
+                  value={formData.depreciation_method}
+                  onChange={(e) => setFormData({ ...formData, depreciation_method: e.target.value as DepreciationMethod })}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer"
+                >
+                  <option value="None">{isFr ? 'Aucun' : 'None'}</option>
+                  <option value="StraightLine">{isFr ? 'Linéaire' : 'Straight Line'}</option>
+                  <option value="DecliningBalance">{isFr ? 'Dégressif' : 'Declining Balance'}</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Valeur résiduelle ($)' : 'Salvage Value ($)'}
+                </label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  value={formData.salvage_value}
+                  onChange={(e) => setFormData({ ...formData, salvage_value: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Durée de vie (Années)' : 'Useful Life (Years)'}
+                </label>
+                <input 
+                  type="number" 
+                  min="0"
+                  step="0.5"
+                  value={formData.useful_life_years}
+                  onChange={(e) => setFormData({ ...formData, useful_life_years: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isFr ? 'Expiration garantie' : 'Warranty Expiration'}
+                </label>
+                <input 
+                  type="date" 
+                  value={formData.warranty_expiration_date}
+                  onChange={(e) => setFormData({ ...formData, warranty_expiration_date: e.target.value })}
                   className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                 />
               </div>

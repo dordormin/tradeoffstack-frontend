@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ToastProvider } from '@/context/ToastContext';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Dashboard } from '@/pages/Dashboard';
 import { Inventory } from '@/pages/Inventory';
+import { Licenses } from '@/pages/Licenses';
+import { SaaSLayout } from '@/layouts/SaaSLayout';
+import { SaaSDashboard } from '@/pages/saas/SaaSDashboard';
+import { SaaSLicenses } from '@/pages/saas/SaaSLicenses';
+import { SaaSUsers } from '@/pages/saas/SaaSUsers';
+import { SaaSBilling } from '@/pages/saas/SaaSBilling';
 import { SelfService } from '@/pages/SelfService';
 import { Reservations } from '@/pages/Reservations';
 import { Maintenance } from '@/pages/Maintenance';
@@ -12,9 +19,23 @@ import { Users } from '@/pages/Users';
 import { AuditLogs } from '@/pages/AuditLogs';
 import { Settings } from '@/pages/Settings';
 import { CentralHub } from '@/pages/CentralHub';
+import { ComingSoon } from '@/pages/ComingSoon';
 import { apiClient } from '@/api/apiClient';
-import { Shield, UserPlus, LogIn, Lock, Mail, User, Eye, EyeOff } from 'lucide-react';
+import { Shield, UserPlus, LogIn, Lock, Mail, User, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { Logo } from './components/Logo';
+import { withPermission } from '@/components/withPermission';
+
+// Protected Components wrapped with HOC (Higher-Order Component Pattern)
+const ProtectedSaaSDashboard = withPermission(SaaSDashboard, ['Admin', 'Manager', 'Tester']);
+const ProtectedSaaSLicenses = withPermission(SaaSLicenses, ['Admin', 'Manager', 'Tester']);
+const ProtectedSaaSUsers = withPermission(SaaSUsers, ['Admin', 'Manager', 'Tester']);
+const ProtectedSaaSBilling = withPermission(SaaSBilling, ['Admin', 'Manager', 'Tester']);
+const ProtectedInventory = withPermission(Inventory, ['Admin', 'Manager', 'Tester']);
+const ProtectedLicenses = withPermission(Licenses, ['Admin', 'Manager', 'Tester']);
+const ProtectedSelfService = withPermission(SelfService, ['Employee']);
+const ProtectedUsers = withPermission(Users, ['Admin']);
+const ProtectedAuditLogs = withPermission(AuditLogs, ['Admin', 'Tester']);
+
 const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: string[] }) => {
   const { isAuthenticated, role, isLoading } = useAuth();
   
@@ -26,13 +47,9 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
 };
 
 const LoginForm = () => {
-  const { login, isAuthenticated } = useAuth();
-  console.log('LoginForm render. isAuthenticated =', isAuthenticated);
+  const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   
-  if (isAuthenticated) {
-    console.log('LoginForm: Navigating to /hub because isAuthenticated is true');
-    return <Navigate to="/hub" replace />;
-  }// Tab State: 'signin' | 'signup'
+  // Tab State: 'signin' | 'signup'
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   
   // Shared States
@@ -47,6 +64,19 @@ const LoginForm = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,16 +121,12 @@ const LoginForm = () => {
         email,
         password
       });
-      const data = response.data;
-      const token = data.token || data.Token;
-      const role = data.role || data.Role;
-      const userId = data.userId || data.UserId || data.user_id;
-      
       setSuccess('Account created successfully! Logging you in...');
       
       setTimeout(async () => {
-        if (token && role && userId) {
-          await login(token, role, userId);
+        if (response.data && response.data.token) {
+          setSuccess('Login successful! Redirecting to dashboard...');
+          await login(response.data.token, response.data.role, response.data.userId);
         } else {
           setActiveTab('signin');
           setSuccess('');
@@ -115,20 +141,20 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background text-foreground overflow-hidden">
+    <div className="h-screen w-full flex bg-background text-foreground overflow-hidden">
       {/* Left Pane - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 md:px-16 lg:px-20 py-12 relative z-10 bg-gradient-to-br from-background via-background/95 to-secondary/10">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 md:px-16 lg:px-20 py-4 relative z-10 bg-gradient-to-br from-background via-background/95 to-secondary/10">
         
         {/* Decorative Neon Glow Elements */}
         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none" />
 
-        <div className="w-full max-w-md mx-auto space-y-8">
+        <div className="w-full max-w-md mx-auto space-y-6">
           
           {/* Header */}
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-1">
             <div className="flex items-center gap-3">
-              <Logo className="scale-150 origin-left mb-6" />
+              <Logo className="scale-125 origin-left mb-4" />
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-foreground/90 pt-4">
               {activeTab === 'signin' ? 'Welcome back' : 'Create an account'}
@@ -164,6 +190,22 @@ const LoginForm = () => {
               <UserPlus className="w-4 h-4" />
               Sign Up
             </button>
+          </div>
+
+          {/* Demo Credentials */}
+          <div className="p-3 bg-secondary/20 border border-border/40 rounded-xl space-y-1.5 text-xs text-muted-foreground">
+            <div className="font-semibold text-foreground/80 mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>Demo Access / Accès démo :</span>
+            </div>
+            <div className="flex justify-between items-center bg-background/40 p-1.5 rounded-lg border border-border/20">
+              <span>Admin: <code className="text-primary select-all">admin@tradeoffstack.com</code></span>
+              <span className="font-mono text-[10px]">Admin123!Secure</span>
+            </div>
+            <div className="flex justify-between items-center bg-background/40 p-1.5 rounded-lg border border-border/20">
+              <span>Tester: <code className="text-primary select-all">tester@tradeoffstack.com</code></span>
+              <span className="font-mono text-[10px]">Tester123!Secure</span>
+            </div>
           </div>
 
           {/* Notifications */}
@@ -344,39 +386,41 @@ const LoginForm = () => {
       </div>
 
       {/* Right Pane - Visual Image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-950/90 via-slate-900/60 to-transparent z-10" />
-        <img
-          src="/login_hero.png"
-          alt="Futuristic IT Infrastructure"
-          className="object-cover w-full h-full"
-        />
-        
-        {/* Overlay Content */}
-        <div className="absolute bottom-16 left-16 right-16 z-20 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-semibold text-primary-foreground font-mono">v4.0.0 Stable</span>
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white leading-tight">
-            IT Asset Lifecycle Management, Orchestrated.
-          </h1>
-          <p className="text-slate-300 text-base max-w-lg">
-            Track hardware parameters, automate reservation lifecycles, and coordinate technical interventions inside a unified glassmorphic dashboard.
-          </p>
+      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-6 bg-background">
+        <div className="w-full h-full relative rounded-3xl overflow-hidden shadow-2xl border border-border/30">
+          <div className="absolute inset-0 bg-gradient-to-tr from-indigo-950/90 via-slate-900/60 to-transparent z-10" />
+          <img
+            src="/jetbrains_mosaic.png"
+            alt="3D JetBrains Mosaic"
+            className="object-cover w-full h-full"
+          />
           
-          <div className="pt-4 grid grid-cols-3 gap-6 border-t border-white/10 max-w-md">
-            <div>
-              <p className="text-2xl font-bold text-white">99.9%</p>
-              <p className="text-xs text-slate-400">System Uptime</p>
+          {/* Overlay Content */}
+          <div className="absolute bottom-12 left-12 right-12 z-20 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-semibold text-primary-foreground font-mono">v4.0.0 Stable</span>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-white">100ms</p>
-              <p className="text-xs text-slate-400">Avg API Response</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">Active</p>
-              <p className="text-xs text-slate-400">Audit Journaling</p>
+            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              Enterprise Hub, Orchestrated.
+            </h1>
+            <p className="text-slate-300 text-sm xl:text-base max-w-lg">
+              Track hardware parameters, automate reservation lifecycles, and coordinate technical interventions inside a unified glassmorphic dashboard.
+            </p>
+            
+            <div className="pt-4 grid grid-cols-3 gap-6 border-t border-white/10 max-w-md">
+              <div>
+                <p className="text-xl xl:text-2xl font-bold text-white">99.9%</p>
+                <p className="text-xs text-slate-400">System Uptime</p>
+              </div>
+              <div>
+                <p className="text-xl xl:text-2xl font-bold text-white">100ms</p>
+                <p className="text-xs text-slate-400">Avg API Response</p>
+              </div>
+              <div>
+                <p className="text-xl xl:text-2xl font-bold text-white">Active</p>
+                <p className="text-xs text-slate-400">Audit Journaling</p>
+              </div>
             </div>
           </div>
         </div>
@@ -410,50 +454,51 @@ const ThemeInitializer = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeInitializer />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginForm />} />
-          
-          <Route element={<ProtectedRoute />}>
-            {/* Central Hub page - outside of the normal sub-app DashboardLayout */}
-            <Route path="/hub" element={<CentralHub />} />
+    <ToastProvider>
+      <AuthProvider>
+        <ThemeInitializer />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginForm />} />
+            
+            <Route element={<ProtectedRoute />}>
+              {/* Central Hub page - outside of the normal sub-app DashboardLayout */}
+              <Route path="/dashboard" element={<CentralHub />} />
+              
+              {/* SaaS Management Module */}
+              <Route element={<SaaSLayout />}>
+                <Route path="/saas" element={<ProtectedSaaSDashboard />} />
+                <Route path="/saas/licenses" element={<ProtectedSaaSLicenses />} />
+                <Route path="/saas/users" element={<ProtectedSaaSUsers />} />
+                <Route path="/saas/billing" element={<ProtectedSaaSBilling />} />
+              </Route>
 
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Navigate to="/hub" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/inventory" element={
-                <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
-                  <Inventory />
-                </ProtectedRoute>
-              } />
-              <Route path="/my-gear" element={
-                <ProtectedRoute allowedRoles={['Employee']}>
-                  <SelfService />
-                </ProtectedRoute>
-              } />
-              <Route path="/reservations" element={<Reservations />} />
-              <Route path="/maintenance" element={<Maintenance />} />
-              <Route path="/departments" element={<Departments />} />
-              <Route path="/users" element={
-                <ProtectedRoute allowedRoles={['Admin']}>
-                  <Users />
-                </ProtectedRoute>
-              } />
-              <Route path="/audit-logs" element={
-                <ProtectedRoute allowedRoles={['Admin']}>
-                  <AuditLogs />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings/*" element={<Settings />} />
+              {/* Placeholder Modules */}
+              <Route path="/helpdesk" element={<ComingSoon title="IT Support Help Desk" />} />
+              <Route path="/procurement" element={<ComingSoon title="Procurement & Purchasing" />} />
+              <Route path="/hr" element={<ComingSoon title="HR & Onboarding Hub" />} />
+
+              <Route element={<DashboardLayout />}>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/asset-portal" element={<Dashboard />} />
+                <Route path="/inventory" element={<ProtectedInventory />} />
+                <Route path="/licenses" element={<ProtectedLicenses />} />
+
+                <Route path="/my-gear" element={<ProtectedSelfService />} />
+                <Route path="/reservations" element={<Reservations />} />
+                <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/departments" element={<Departments />} />
+                <Route path="/users" element={<ProtectedUsers />} />
+                <Route path="/audit-logs" element={<ProtectedAuditLogs />} />
+                <Route path="/settings/*" element={<Settings />} />
+              </Route>
             </Route>
-          </Route>
-          
-          <Route path="*" element={<Navigate to="/hub" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            
+            <Route path="*" element={<Navigate to="/hub" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 
