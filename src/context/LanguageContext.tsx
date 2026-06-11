@@ -6,6 +6,7 @@ export const translations = {
   en: {
     dashboard: "Dashboard",
     inventory: "Inventory",
+    software: "Software Licenses",
     myGear: "My Gear",
     reservations: "Reservations",
     maintenance: "Maintenance",
@@ -66,6 +67,7 @@ export const translations = {
   fr: {
     dashboard: "Tableau de bord",
     inventory: "Inventaire",
+    software: "Licences",
     myGear: "Mon équipement",
     reservations: "Réservations",
     maintenance: "Maintenance",
@@ -178,3 +180,18 @@ export const useTranslation = () => {
   }
   return context;
 };
+
+export function withTranslation<P extends object>(
+  WrappedComponent: React.ComponentType<P & LanguageContextType>
+) {
+  const WithTranslationComponent: React.FC<P> = (props) => {
+    const translation = useTranslation();
+    return <WrappedComponent {...props} {...translation} />;
+  };
+
+  WithTranslationComponent.displayName = `withTranslation(${
+    WrappedComponent.displayName || WrappedComponent.name || 'Component'
+  })`;
+
+  return WithTranslationComponent;
+}

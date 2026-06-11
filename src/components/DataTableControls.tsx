@@ -171,3 +171,10 @@ export const SortableHeader: React.FC<SortableHeaderProps> = ({
     </button>
   );
 };
+
+export const DataTable = {
+  Controls: DataTableControls,
+  Pagination: DataTablePagination,
+  Header: SortableHeader,
+};
+

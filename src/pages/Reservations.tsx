@@ -23,7 +23,7 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTableState } from '@/hooks/useTableState';
-import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
 
 export const Reservations: React.FC = () => {
@@ -104,6 +104,10 @@ export const Reservations: React.FC = () => {
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">{isFr ? 'Retourné' : 'Returned'}</Badge>;
       case 'Cancelled':
         return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">{isFr ? 'Annulé' : 'Cancelled'}</Badge>;
+      case 'Approved':
+        return <Badge className="bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border-indigo-500/20">{isFr ? 'Approuvée' : 'Approved'}</Badge>;
+      case 'Rejected':
+        return <Badge className="bg-red-600/10 text-red-600 hover:bg-red-600/20 border-red-600/20">{isFr ? 'Rejetée' : 'Rejected'}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -126,6 +130,27 @@ export const Reservations: React.FC = () => {
       loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || (isFr ? 'Échec de l\'annulation.' : 'Failed to cancel reservation.'));
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    if (!window.confirm(isFr ? 'Approuver cette réservation ?' : 'Approve this reservation?')) return;
+    try {
+      await apiClient.post(`/reservation/${id}/approve`);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || (isFr ? 'Échec de l\'approbation.' : 'Failed to approve reservation.'));
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const reason = window.prompt(isFr ? 'Motif du rejet :' : 'Reason for rejection:');
+    if (!reason) return;
+    try {
+      await apiClient.post(`/reservation/${id}/reject`, { reason });
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || (isFr ? 'Échec du rejet.' : 'Failed to reject reservation.'));
     }
   };
 
@@ -215,7 +240,7 @@ export const Reservations: React.FC = () => {
         </Button>
       </div>
 
-      <DataTableControls
+      <DataTable.Controls
         searchTerm={table.searchTerm}
         onSearchChange={table.setSearchTerm}
         searchPlaceholder={isFr ? 'Rechercher par statut, notes...' : 'Search by status, notes...'}
@@ -236,13 +261,13 @@ export const Reservations: React.FC = () => {
                 <TableHead>{isFr ? 'Nom de l\'équipement' : 'Asset Name'}</TableHead>
                 <TableHead>{isFr ? 'Utilisateur' : 'User'}</TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date de début' : 'Start Date'} sortKey="start_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date de début' : 'Start Date'} sortKey="start_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date de fin' : 'End Date'} sortKey="end_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date de fin' : 'End Date'} sortKey="end_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -294,7 +319,7 @@ export const Reservations: React.FC = () => {
                               {isFr ? 'Retourner' : 'Return'}
                             </Button>
                           )}
-                          {(res.status === 'Pending' || res.status === 'Active') && (
+                          {(res.status === 'Pending' || res.status === 'Active' || res.status === 'Approved') && (
                             <Button 
                               onClick={() => handleCancel(res.id)} 
                               size="sm" 
@@ -304,6 +329,28 @@ export const Reservations: React.FC = () => {
                               <XCircle className="w-3.5 h-3.5" />
                               {isFr ? 'Annuler' : 'Cancel'}
                             </Button>
+                          )}
+                          {(role === 'Admin' || role === 'Manager') && res.status === 'Pending' && (
+                            <>
+                              <Button 
+                                onClick={() => handleApprove(res.id)} 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 flex items-center gap-1 cursor-pointer"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                {isFr ? 'Approuver' : 'Approve'}
+                              </Button>
+                              <Button 
+                                onClick={() => handleReject(res.id)} 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-red-600/20 text-red-600 hover:bg-red-600/10 flex items-center gap-1 cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                {isFr ? 'Rejeter' : 'Reject'}
+                              </Button>
+                            </>
                           )}
                           {(role === 'Admin' || role === 'Manager') && (
                             <Button 
@@ -325,7 +372,7 @@ export const Reservations: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={table.currentPage}
             totalPages={table.totalPages}
             totalFiltered={table.totalFiltered}

@@ -17,13 +17,29 @@ export const CATEGORY_IMAGES: Record<string, string> = {
 export const getAssetImageUrl = (asset: Equipment | null | undefined): string => {
   if (!asset) return CATEGORY_IMAGES.Default;
   
-  if (asset.image_url && (asset.image_url.startsWith('http://') || asset.image_url.startsWith('https://'))) {
+  const isDefaultMockImage = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    const mockFiles = [
+      'laptop_dell_xps.jpg', 'laptop_macbook_pro.jpg', 'laptop_hp_spectre.jpg', 
+      'laptop_surface.jpg', 'laptop_lenovo_yoga.jpg', 'monitor_dell_4k.jpg', 
+      'monitor_standard.jpg', 'keyboard_mechanical.jpg', 'mouse_ergonomic.jpg', 
+      'headset_pro.jpg', 'projector.jpg', 'printer.jpg', 'server.jpg', 'nas.jpg'
+    ];
+    return mockFiles.some(file => url.endsWith(file));
+  };
+
+  if (asset.image_url && 
+      (asset.image_url.startsWith('http://') || asset.image_url.startsWith('https://')) &&
+      !isDefaultMockImage(asset.image_url)) {
     return asset.image_url;
   }
   
-  if (asset.image_url_https && (asset.image_url_https.startsWith('http://') || asset.image_url_https.startsWith('https://'))) {
+  if (asset.image_url_https && 
+      (asset.image_url_https.startsWith('http://') || asset.image_url_https.startsWith('https://')) &&
+      !isDefaultMockImage(asset.image_url_https)) {
     return asset.image_url_https;
   }
   
   return CATEGORY_IMAGES[asset.category] || CATEGORY_IMAGES.Default;
 };
+

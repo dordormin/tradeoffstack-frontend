@@ -1,48 +1,33 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { Logo } from '@/components/Logo';
-import { AssetPortalIcon } from '@/components/AssetPortalIcon';
 import { UserProfileDropdown } from '@/components/UserProfileDropdown';
 import { 
+  Cloud,
   LayoutDashboard, 
-  MonitorSmartphone, 
-  CalendarClock, 
-  Wrench, 
-  Users, 
-  Building2, 
-  ShieldAlert,
+  KeySquare,
+  Users,
   Grid,
   ChevronDown,
-  Check,
   Sparkles,
-  Cloud,
-  KeySquare
+  Check,
+  CreditCard
 } from 'lucide-react';
-export const DashboardLayout: React.FC = () => {
+
+export const SaaSLayout: React.FC = () => {
   const { language } = useTranslation();
-  const { t } = useTranslation();
-  const { role } = useAuth();
   const navigate = useNavigate();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const isFr = language === 'fr';
 
   const navItems = [
-    { labelKey: 'dashboard' as const, path: '/asset-portal', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Employee', 'Tester'] },
-    { labelKey: 'inventory' as const, path: '/inventory', icon: MonitorSmartphone, roles: ['Admin', 'Manager', 'Tester'] },
-
-    { labelKey: 'myGear' as const, path: '/my-gear', icon: MonitorSmartphone, roles: ['Employee'] },
-    { labelKey: 'reservations' as const, path: '/reservations', icon: CalendarClock, roles: ['Admin', 'Manager', 'Employee', 'Tester'] },
-    { labelKey: 'maintenance' as const, path: '/maintenance', icon: Wrench, roles: ['Admin', 'Manager', 'Employee', 'Tester'] },
-    { labelKey: 'software' as const, path: '/licenses', icon: KeySquare, roles: ['Admin', 'Manager'] },
-    { labelKey: 'departments' as const, path: '/departments', icon: Building2, roles: ['Admin', 'Tester'] },
-    { labelKey: 'users' as const, path: '/users', icon: Users, roles: ['Admin'] },
-    { labelKey: 'auditLogs' as const, path: '/audit-logs', icon: ShieldAlert, roles: ['Admin', 'Tester'] },
+    { label: isFr ? 'Tableau de bord' : 'Dashboard', path: '/saas', icon: LayoutDashboard, exact: true },
+    { label: isFr ? 'Licences SaaS' : 'SaaS Licenses', path: '/saas/licenses', icon: KeySquare },
+    { label: isFr ? 'Utilisateurs' : 'Users', path: '/saas/users', icon: Users },
+    { label: isFr ? 'Facturation' : 'Billing', path: '/saas/billing', icon: CreditCard },
   ];
-
-  const filteredNavItems = navItems.filter((item) => role && item.roles.includes(role));
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -56,45 +41,46 @@ export const DashboardLayout: React.FC = () => {
           {/* Back to Central Hub button */}
           <NavLink
             to="/dashboard"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-primary/80 hover:bg-primary/5 hover:text-primary transition-colors border border-primary/10 mb-4 bg-primary/[0.02]"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-sky-500 hover:bg-sky-500/10 transition-colors border border-sky-500/10 mb-4 bg-sky-500/5"
           >
-            <Grid className="w-4 h-4 text-primary" />
+            <Grid className="w-4 h-4 text-sky-500" />
             <span>{isFr ? 'Accueil central' : 'Central Hub'}</span>
           </NavLink>
 
-          {filteredNavItems.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.exact}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                   isActive 
-                    ? 'bg-primary/10 text-primary' 
+                    ? 'bg-sky-500/10 text-sky-500' 
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`
               }
             >
               <item.icon className="w-4 h-4" />
-              {t(item.labelKey)}
+              {item.label}
             </NavLink>
           ))}
         </nav>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="h-16 border-b bg-card flex items-center justify-between px-6 shrink-0">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Top Header */}
+        <header className="h-16 border-b bg-card/50 backdrop-blur flex items-center justify-between px-6 shrink-0 z-10 relative">
           <div className="flex items-center gap-3 relative">
             <button 
               onClick={() => setSwitcherOpen(!switcherOpen)}
               className="flex items-center gap-2 hover:bg-secondary px-2 py-1.5 rounded-md transition-colors"
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary border border-primary/20">
-                <AssetPortalIcon showWrapper={false} className="w-5 h-5" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                <Cloud className="w-4 h-4" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-sm font-semibold leading-none">Asset Portal</span>
+                <span className="text-sm font-semibold leading-none">{isFr ? 'Gestion SaaS' : 'SaaS Mgmt'}</span>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Workspace</span>
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />
@@ -120,23 +106,23 @@ export const DashboardLayout: React.FC = () => {
 
                   <button 
                     onClick={() => { navigate('/asset-portal'); setSwitcherOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-primary font-medium bg-primary/5 hover:bg-primary/10 transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-foreground hover:bg-secondary/60 transition-colors text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <AssetPortalIcon className="w-4 h-4" showWrapper={false} />
+                      <LayoutDashboard className="w-4 h-4 text-primary" />
                       <span>Asset Portal</span>
                     </div>
-                    <Check className="w-4 h-4 text-primary" />
                   </button>
 
                   <button 
                     onClick={() => { navigate('/saas'); setSwitcherOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-foreground hover:bg-secondary/60 transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-sky-500 font-medium bg-sky-500/5 hover:bg-sky-500/10 transition-colors text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       <Cloud className="w-4 h-4 text-sky-500" />
                       <span>{isFr ? 'Gestion SaaS' : 'SaaS Mgmt'}</span>
                     </div>
+                    <Check className="w-4 h-4 text-sky-500" />
                   </button>
 
                   <div className="border-t border-border/60 my-1" />
@@ -149,14 +135,13 @@ export const DashboardLayout: React.FC = () => {
               </>
             )}
           </div>
+          
           <UserProfileDropdown />
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
-          <div className="max-w-[1440px] mx-auto">
-            <Outlet />
-          </div>
+        <main className="flex-1 overflow-auto bg-background/50 p-6">
+          <Outlet />
         </main>
       </div>
     </div>
