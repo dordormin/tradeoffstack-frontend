@@ -70,3 +70,18 @@ export const useToast = () => {
   if (!context) throw new Error('useToast must be used within a ToastProvider');
   return context;
 };
+
+export function withToast<P extends object>(
+  WrappedComponent: React.ComponentType<P & ToastContextProps>
+) {
+  const WithToastComponent: React.FC<P> = (props) => {
+    const toastContext = useToast();
+    return <WrappedComponent {...props} {...toastContext} />;
+  };
+
+  WithToastComponent.displayName = `withToast(${
+    WrappedComponent.displayName || WrappedComponent.name || 'Component'
+  })`;
+
+  return WithToastComponent;
+}

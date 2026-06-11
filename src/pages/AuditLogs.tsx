@@ -21,7 +21,7 @@ import { ShieldAlert, Eye } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTableState } from '@/hooks/useTableState';
-import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 
 export const AuditLogs: React.FC = () => {
   const { language } = useTranslation();
@@ -96,7 +96,7 @@ export const AuditLogs: React.FC = () => {
         </div>
       </div>
 
-      <DataTableControls
+      <DataTable.Controls
         searchTerm={table.searchTerm}
         onSearchChange={table.setSearchTerm}
         searchPlaceholder={isFr ? 'Rechercher par type, action, ID...' : 'Search by type, action, ID...'}
@@ -115,13 +115,13 @@ export const AuditLogs: React.FC = () => {
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date et heure' : 'Timestamp'} sortKey="performed_at" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date et heure' : 'Timestamp'} sortKey="performed_at" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Type d\'entité' : 'Entity Type'} sortKey="entity_type" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Type d\'entité' : 'Entity Type'} sortKey="entity_type" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label="Action" sortKey="action" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label="Action" sortKey="action" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>{isFr ? 'ID d\'entité' : 'Entity ID'}</TableHead>
                 <TableHead>{isFr ? 'Effectué par' : 'Performed By'}</TableHead>
@@ -168,7 +168,7 @@ export const AuditLogs: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={table.currentPage}
             totalPages={table.totalPages}
             totalFiltered={table.totalFiltered}

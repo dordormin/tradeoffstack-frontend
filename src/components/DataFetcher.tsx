@@ -9,10 +9,11 @@ interface DataFetcherState<T> {
 
 interface DataFetcherProps<T> {
   fetchFn: () => Promise<T>;
-  children: (state: DataFetcherState<T>) => React.ReactNode;
+  children?: (state: DataFetcherState<T>) => React.ReactNode;
+  data?: (state: DataFetcherState<T>) => React.ReactNode;
 }
 
-export function DataFetcher<T>({ fetchFn, children }: DataFetcherProps<T>) {
+export function DataFetcher<T>({ fetchFn, children, data: renderProp }: DataFetcherProps<T>) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,5 +35,8 @@ export function DataFetcher<T>({ fetchFn, children }: DataFetcherProps<T>) {
     loadData();
   }, [loadData]);
 
-  return <>{children({ data, loading, error, refetch: loadData })}</>;
+  const renderFn = renderProp || children;
+  if (!renderFn) return null;
+
+  return <>{renderFn({ data, loading, error, refetch: loadData })}</>;
 }

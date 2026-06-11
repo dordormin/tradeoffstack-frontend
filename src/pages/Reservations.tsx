@@ -23,7 +23,7 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTableState } from '@/hooks/useTableState';
-import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
 
 export const Reservations: React.FC = () => {
@@ -240,7 +240,7 @@ export const Reservations: React.FC = () => {
         </Button>
       </div>
 
-      <DataTableControls
+      <DataTable.Controls
         searchTerm={table.searchTerm}
         onSearchChange={table.setSearchTerm}
         searchPlaceholder={isFr ? 'Rechercher par statut, notes...' : 'Search by status, notes...'}
@@ -261,13 +261,13 @@ export const Reservations: React.FC = () => {
                 <TableHead>{isFr ? 'Nom de l\'équipement' : 'Asset Name'}</TableHead>
                 <TableHead>{isFr ? 'Utilisateur' : 'User'}</TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date de début' : 'Start Date'} sortKey="start_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date de début' : 'Start Date'} sortKey="start_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date de fin' : 'End Date'} sortKey="end_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date de fin' : 'End Date'} sortKey="end_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -372,7 +372,7 @@ export const Reservations: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={table.currentPage}
             totalPages={table.totalPages}
             totalFiltered={table.totalFiltered}

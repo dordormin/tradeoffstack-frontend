@@ -180,3 +180,18 @@ export const useTranslation = () => {
   }
   return context;
 };
+
+export function withTranslation<P extends object>(
+  WrappedComponent: React.ComponentType<P & LanguageContextType>
+) {
+  const WithTranslationComponent: React.FC<P> = (props) => {
+    const translation = useTranslation();
+    return <WrappedComponent {...props} {...translation} />;
+  };
+
+  WithTranslationComponent.displayName = `withTranslation(${
+    WrappedComponent.displayName || WrappedComponent.name || 'Component'
+  })`;
+
+  return WithTranslationComponent;
+}

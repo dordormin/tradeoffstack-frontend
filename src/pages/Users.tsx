@@ -24,7 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useTableState } from '@/hooks/useTableState';
-import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 
 export const Users: React.FC = () => {
   const { role } = useAuth();
@@ -185,7 +185,7 @@ export const Users: React.FC = () => {
         )}
       </div>
 
-      <DataTableControls
+      <DataTable.Controls
         searchTerm={table.searchTerm}
         onSearchChange={table.setSearchTerm}
         searchPlaceholder={isFr ? 'Rechercher par nom, e-mail, rôle...' : 'Search by name, email, role...'}
@@ -204,17 +204,17 @@ export const Users: React.FC = () => {
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Nom complet' : 'Full Name'} sortKey="first_name" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Nom complet' : 'Full Name'} sortKey="first_name" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'E-mail' : 'Email'} sortKey="email" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'E-mail' : 'Email'} sortKey="email" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Rôle' : 'Role'} sortKey="role" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Rôle' : 'Role'} sortKey="role" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>{isFr ? 'Département' : 'Department'}</TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="is_active" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Statut' : 'Status'} sortKey="is_active" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 {role === 'Admin' && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
@@ -279,7 +279,7 @@ export const Users: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={table.currentPage}
             totalPages={table.totalPages}
             totalFiltered={table.totalFiltered}

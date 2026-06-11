@@ -23,7 +23,7 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTableState } from '@/hooks/useTableState';
-import { DataTableControls, DataTablePagination, SortableHeader } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
 
 export const Maintenance: React.FC = () => {
@@ -225,7 +225,7 @@ export const Maintenance: React.FC = () => {
         </Button>
       </div>
 
-      <DataTableControls
+      <DataTable.Controls
         searchTerm={table.searchTerm}
         onSearchChange={table.setSearchTerm}
         searchPlaceholder={isFr ? 'Rechercher par description, statut, priorité...' : 'Search by description, status, priority...'}
@@ -245,14 +245,14 @@ export const Maintenance: React.FC = () => {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>{isFr ? 'Nom de l\'équipement' : 'Asset Name'}</TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Priorité' : 'Priority'} sortKey="priority" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Priorité' : 'Priority'} sortKey="priority" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Date programmée' : 'Scheduled Date'} sortKey="scheduled_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
+                  <DataTable.Header label={isFr ? 'Date programmée' : 'Scheduled Date'} sortKey="scheduled_date" sortConfig={table.sortConfig} onSort={table.handleSort} />
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -332,7 +332,7 @@ export const Maintenance: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={table.currentPage}
             totalPages={table.totalPages}
             totalFiltered={table.totalFiltered}

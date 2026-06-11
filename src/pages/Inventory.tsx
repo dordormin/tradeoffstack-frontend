@@ -31,7 +31,7 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { getAssetImageUrl } from '@/utils/assetImages';
-import { SortableHeader, DataTablePagination } from '@/components/DataTableControls';
+import { DataTable } from '@/components/DataTableControls';
 import type { SortConfig } from '@/hooks/useTableState';
 import { ImageUpload } from '@/components/ImageUpload';
 
@@ -398,19 +398,19 @@ export const Inventory: React.FC = () => {
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="w-[300px]">
-                  <SortableHeader label={isFr ? 'Nom de l\'équipement' : 'Asset Name'} sortKey="name" sortConfig={sortConfig} onSort={handleSort} />
+                  <DataTable.Header label={isFr ? 'Nom de l\'équipement' : 'Asset Name'} sortKey="name" sortConfig={sortConfig} onSort={handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Numéro de série' : 'Serial Number'} sortKey="serial_number" sortConfig={sortConfig} onSort={handleSort} />
+                  <DataTable.Header label={isFr ? 'Numéro de série' : 'Serial Number'} sortKey="serial_number" sortConfig={sortConfig} onSort={handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Catégorie' : 'Category'} sortKey="category" sortConfig={sortConfig} onSort={handleSort} />
+                  <DataTable.Header label={isFr ? 'Catégorie' : 'Category'} sortKey="category" sortConfig={sortConfig} onSort={handleSort} />
                 </TableHead>
                 <TableHead>
-                  <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={sortConfig} onSort={handleSort} />
+                  <DataTable.Header label={isFr ? 'Statut' : 'Status'} sortKey="status" sortConfig={sortConfig} onSort={handleSort} />
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortableHeader label={isFr ? 'Prix' : 'Price'} sortKey="price" sortConfig={sortConfig} onSort={handleSort} className="justify-end" />
+                  <DataTable.Header label={isFr ? 'Prix' : 'Price'} sortKey="price" sortConfig={sortConfig} onSort={handleSort} className="justify-end" />
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -452,7 +452,7 @@ export const Inventory: React.FC = () => {
             </TableBody>
           </Table>
 
-          <DataTablePagination
+          <DataTable.Pagination
             currentPage={safeCurrentPage}
             totalPages={totalPages}
             totalFiltered={sortedData.length}
