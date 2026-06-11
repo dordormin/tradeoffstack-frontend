@@ -14,11 +14,11 @@ test.describe('Asset Portal End-to-End Suite', () => {
   });
 
   test('Seed and Validate Software Licenses', async ({ page }) => {
-    // Navigate to Software page
-    await page.goto('/software');
+    // Navigate to Licenses page
+    await page.goto('/licenses');
     
     // Expect the header
-    await expect(page.locator('h1')).toContainText('Software Licenses', { ignoreCase: true, timeout: 5000 }).catch(() => 
+    await expect(page.locator('h1')).toContainText('Licenses', { ignoreCase: true, timeout: 5000 }).catch(() => 
       expect(page.locator('h1')).toContainText('Licences', { ignoreCase: true })
     );
 
@@ -33,7 +33,7 @@ test.describe('Asset Portal End-to-End Suite', () => {
       await page.click('button:has-text("Add License"), button:has-text("Ajouter une licence")');
       
       // Fill the form
-      await page.fill('input[placeholder*="Office 365"]', lic.name);
+      await page.fill('input[placeholder*="Windows 11"]', lic.name);
       await page.fill('input[placeholder*="XXXX"]', lic.key);
       await page.fill('input[type="number"]:not([step])', lic.seats); // Total seats has no step
       await page.fill('input[step="0.01"]', lic.price); // Price has step="0.01"

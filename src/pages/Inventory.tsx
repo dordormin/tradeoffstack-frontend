@@ -671,7 +671,7 @@ export const Inventory: React.FC = () => {
 
       {/* Create / Edit Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-lg border-border bg-card">
+        <DialogContent className="sm:max-w-lg border-border bg-card max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg text-foreground">
               {isEditing 

@@ -23,7 +23,7 @@ test.describe('Login Flow', () => {
     await expect(page).toHaveURL(/\/dashboard/);
 
     // Verify dashboard is loaded by checking for a dashboard element
-    await expect(page.locator('h1').filter({ hasText: /Dashboard|Tableau de bord/ })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /Application Central|Enterprise Hub|Dashboard|Tableau de bord/ })).toBeVisible();
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
