@@ -22,6 +22,7 @@ import { Plus, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { useTableState } from '@/hooks/useTableState';
 import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
@@ -30,6 +31,7 @@ export const Maintenance: React.FC = () => {
   const { role, userId } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { error } = useToast();
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   
@@ -121,7 +123,7 @@ export const Maintenance: React.FC = () => {
       await apiClient.post(`/maintenancerequest/${id}/cancel`);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de l\'annulation de la demande.' : 'Failed to cancel maintenance request.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de l\'annulation de la demande.' : 'Failed to cancel maintenance request.'));
     }
   };
 
@@ -141,7 +143,7 @@ export const Maintenance: React.FC = () => {
       setIsCompleteOpen(false);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la validation de la demande.' : 'Failed to complete request.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la validation de la demande.' : 'Failed to complete request.'));
     }
   };
 

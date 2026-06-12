@@ -30,6 +30,7 @@ import { Search, Plus, MonitorSmartphone, Edit, Trash2, LayoutGrid, List, KeySqu
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { getAssetImageUrl } from '@/utils/assetImages';
 import { DataTable } from '@/components/DataTableControls';
 import type { SortConfig } from '@/hooks/useTableState';
@@ -39,6 +40,7 @@ export const Inventory: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { error } = useToast();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
@@ -191,7 +193,7 @@ export const Inventory: React.FC = () => {
       fetchInventory();
       setIsSheetOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete asset.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete asset.'));
     }
   };
 
@@ -230,7 +232,7 @@ export const Inventory: React.FC = () => {
       setSelectedAsset(response.data);
       fetchInventory();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de l\'attribution de la licence.' : 'Failed to assign license.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de l\'attribution de la licence.' : 'Failed to assign license.'));
     }
   };
 
@@ -245,7 +247,7 @@ export const Inventory: React.FC = () => {
       setSelectedAsset(response.data);
       fetchInventory();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la révocation de la licence.' : 'Failed to revoke license.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la révocation de la licence.' : 'Failed to revoke license.'));
     }
   };
 

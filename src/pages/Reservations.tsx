@@ -22,6 +22,7 @@ import { Plus, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { useTableState } from '@/hooks/useTableState';
 import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
@@ -30,6 +31,7 @@ export const Reservations: React.FC = () => {
   const { role, userId } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { error } = useToast();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -119,7 +121,7 @@ export const Reservations: React.FC = () => {
       await apiClient.post(`/reservation/${id}/return`);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec du retour.' : 'Failed to process return.'));
+      error(err.response?.data?.message || (isFr ? 'Échec du retour.' : 'Failed to process return.'));
     }
   };
 
@@ -129,7 +131,7 @@ export const Reservations: React.FC = () => {
       await apiClient.post(`/reservation/${id}/cancel`);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de l\'annulation.' : 'Failed to cancel reservation.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de l\'annulation.' : 'Failed to cancel reservation.'));
     }
   };
 
@@ -139,7 +141,7 @@ export const Reservations: React.FC = () => {
       await apiClient.post(`/reservation/${id}/approve`);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de l\'approbation.' : 'Failed to approve reservation.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de l\'approbation.' : 'Failed to approve reservation.'));
     }
   };
 
@@ -150,7 +152,7 @@ export const Reservations: React.FC = () => {
       await apiClient.post(`/reservation/${id}/reject`, { reason });
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec du rejet.' : 'Failed to reject reservation.'));
+      error(err.response?.data?.message || (isFr ? 'Échec du rejet.' : 'Failed to reject reservation.'));
     }
   };
 

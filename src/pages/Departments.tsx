@@ -21,11 +21,13 @@ import { Building2, Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 
 export const Departments: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { error } = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -82,7 +84,7 @@ export const Departments: React.FC = () => {
       await apiClient.delete(`/department/${id}`);
       fetchDepartments();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete department.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete department.'));
     }
   };
 

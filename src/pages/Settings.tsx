@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { apiClient } from '@/api/apiClient';
 import type { Department } from '@/types';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ export const Settings: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const view = location.pathname.includes('/system') ? 'system' : 'profile';
+  const { error } = useToast();
   
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -107,7 +109,7 @@ export const Settings: React.FC = () => {
       }));
     } catch (err: any) {
       console.error('Upload failed', err);
-      alert(language === 'fr' ? 'Le téléchargement de l\'image a échoué.' : 'Image upload failed.');
+      error(language === 'fr' ? 'Le téléchargement de l\'image a échoué.' : 'Image upload failed.');
     } finally {
       setIsUploading(false);
     }

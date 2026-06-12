@@ -1,6 +1,6 @@
 
 import { Badge } from '@/components/ui/badge';
-export const getRoleBadge = (role: string, _isFr: boolean) => {
+export const getRoleBadge = (role: string) => {
   const styles: Record<string, string> = {
     Admin: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
     Manager: 'bg-amber-500/10 text-amber-500 border-amber-500/20',

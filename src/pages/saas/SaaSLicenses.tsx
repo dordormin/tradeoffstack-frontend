@@ -33,7 +33,6 @@ export const SaaSLicenses: React.FC = () => {
   });
 
   const fetchData = async () => {
-    setIsLoading(true);
     try {
       const [subs, provs] = await Promise.all([saasApi.getSubscriptions(), saasApi.getProviders()]);
       setLicenses(subs || []);
@@ -46,7 +45,10 @@ export const SaaSLicenses: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    setIsLoading(true);
+    fetchData(); 
+  }, []);
 
   const openAddForm = () => {
     setIsEditing(false);
@@ -121,7 +123,8 @@ export const SaaSLicenses: React.FC = () => {
 
   const isExpiringSoon = (dateString?: string) => {
     if (!dateString) return false;
-    const diffDays = Math.ceil((new Date(dateString).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const now = new Date().getTime();
+    const diffDays = Math.ceil((new Date(dateString).getTime() - now) / (1000 * 60 * 60 * 24));
     return diffDays > 0 && diffDays <= 30;
   };
 

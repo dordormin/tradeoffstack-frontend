@@ -9,6 +9,7 @@ import { Licenses } from '@/pages/Licenses';
 import { SaaSLayout } from '@/layouts/SaaSLayout';
 import { SaaSDashboard } from '@/pages/saas/SaaSDashboard';
 import { SaaSLicenses } from '@/pages/saas/SaaSLicenses';
+import { SaaSProviders } from '@/pages/saas/SaaSProviders';
 import { SaaSUsers } from '@/pages/saas/SaaSUsers';
 import { SaaSBilling } from '@/pages/saas/SaaSBilling';
 import { SelfService } from '@/pages/SelfService';
@@ -27,6 +28,7 @@ import { withPermission } from '@/components/withPermission';
 
 // Protected Components wrapped with HOC (Higher-Order Component Pattern)
 const ProtectedSaaSDashboard = withPermission(SaaSDashboard, ['Admin', 'Manager', 'Tester']);
+const ProtectedSaaSProviders = withPermission(SaaSProviders, ['Admin', 'Manager', 'Tester']);
 const ProtectedSaaSLicenses = withPermission(SaaSLicenses, ['Admin', 'Manager', 'Tester']);
 const ProtectedSaaSUsers = withPermission(SaaSUsers, ['Admin', 'Manager', 'Tester']);
 const ProtectedSaaSBilling = withPermission(SaaSBilling, ['Admin', 'Manager', 'Tester']);
@@ -468,6 +470,7 @@ function App() {
               {/* SaaS Management Module */}
               <Route element={<SaaSLayout />}>
                 <Route path="/saas" element={<ProtectedSaaSDashboard />} />
+                <Route path="/saas/providers" element={<ProtectedSaaSProviders />} />
                 <Route path="/saas/licenses" element={<ProtectedSaaSLicenses />} />
                 <Route path="/saas/users" element={<ProtectedSaaSUsers />} />
                 <Route path="/saas/billing" element={<ProtectedSaaSBilling />} />

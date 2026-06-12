@@ -21,12 +21,14 @@ import { KeySquare, Plus, Edit, Trash2, AlertTriangle, CheckCircle } from 'lucid
 import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import type { SoftwareLicense } from '@/types';
 
 export const Licenses: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
+  const { error } = useToast();
   const [licenses, setLicenses] = useState<SoftwareLicense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -92,7 +94,7 @@ export const Licenses: React.FC = () => {
       await apiClient.delete(`/softwarelicense/${id}`);
       fetchLicenses();
     } catch (err: any) {
-      alert(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete license.'));
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete license.'));
     }
   };
 

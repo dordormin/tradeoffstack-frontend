@@ -12,7 +12,8 @@ import {
   ChevronDown,
   Sparkles,
   Check,
-  CreditCard
+  CreditCard,
+  Building2
 } from 'lucide-react';
 
 export const SaaSLayout: React.FC = () => {
@@ -24,6 +25,7 @@ export const SaaSLayout: React.FC = () => {
 
   const navItems = [
     { label: isFr ? 'Tableau de bord' : 'Dashboard', path: '/saas', icon: LayoutDashboard, exact: true },
+    { label: isFr ? 'Fournisseurs' : 'Providers', path: '/saas/providers', icon: Building2 },
     { label: isFr ? 'Licences SaaS' : 'SaaS Licenses', path: '/saas/licenses', icon: KeySquare },
     { label: isFr ? 'Utilisateurs' : 'Users', path: '/saas/users', icon: Users },
     { label: isFr ? 'Facturation' : 'Billing', path: '/saas/billing', icon: CreditCard },
