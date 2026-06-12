@@ -85,9 +85,22 @@
   html {
     @apply font-sans;
   }
+  
+  @keyframes shrink-width {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
+
+  .animate-shrink-width {
+    animation-name: shrink-width;
+  }
 }
 
-@layer base {
+@layer components {
   * {
     @apply border-border;
   }

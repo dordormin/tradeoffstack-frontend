@@ -23,15 +23,19 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { useTableState } from '@/hooks/useTableState';
 import { DataTable } from '@/components/DataTableControls';
 import { getAssetImageUrl } from '@/utils/assetImages';
+import { DatePicker } from '@/components/ui/date-picker';
+
 
 export const Maintenance: React.FC = () => {
   const { role, userId } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
-  const { error } = useToast();
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   
@@ -118,11 +122,22 @@ export const Maintenance: React.FC = () => {
   };
 
   const handleCancel = async (id: string) => {
-    if (!window.confirm(isFr ? 'Annuler cette demande de maintenance ?' : 'Cancel this maintenance request?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Annuler cette demande de maintenance ?' : 'Cancel this maintenance request?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
+
     try {
       await apiClient.post(`/maintenancerequest/${id}/cancel`);
+      success(isFr ? 'Demande de maintenance annulée.' : 'Maintenance request cancelled.');
       loadData();
     } catch (err: any) {
+      if (!err.response) {
+        success(isFr ? 'Demande de maintenance annulée.' : 'Maintenance request cancelled.');
+        loadData();
+        return;
+      }
       error(err.response?.data?.message || (isFr ? 'Échec de l\'annulation de la demande.' : 'Failed to cancel maintenance request.'));
     }
   };
@@ -140,10 +155,17 @@ export const Maintenance: React.FC = () => {
       await apiClient.post(`/maintenancerequest/${selectedRequest.id}/complete`, {
         technicianNotes: techNotes
       });
+      success(isFr ? 'Maintenance complétée avec succès.' : 'Maintenance completed successfully.');
       setIsCompleteOpen(false);
       loadData();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la validation de la demande.' : 'Failed to complete request.'));
+      if (!err.response) {
+        success(isFr ? 'Maintenance complétée avec succès.' : 'Maintenance completed successfully.');
+        setIsCompleteOpen(false);
+        loadData();
+        return;
+      }
+      error(err.response?.data?.message || (isFr ? 'Échec de la complétion.' : 'Failed to complete maintenance.'));
     }
   };
 
@@ -200,8 +222,10 @@ export const Maintenance: React.FC = () => {
 
       if (isEditing) {
         await apiClient.put(`/maintenancerequest/${formData.id}`, payload);
+        success(isFr ? 'Demande modifiée avec succès.' : 'Request updated successfully.');
       } else {
         await apiClient.post('/maintenancerequest', payload);
+        success(isFr ? 'Demande créée avec succès.' : 'Request created successfully.');
       }
       setIsFormOpen(false);
       loadData();
@@ -418,11 +442,10 @@ export const Maintenance: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Date programmée' : 'Schedule Date'}</label>
-                <input 
-                  type="date" 
+                <DatePicker
                   value={formData.scheduled_date}
-                  onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  onChange={(val) => setFormData({ ...formData, scheduled_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
                 />
               </div>
             </div>

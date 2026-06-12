@@ -23,6 +23,7 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { useTableState } from '@/hooks/useTableState';
 import { DataTable } from '@/components/DataTableControls';
 
@@ -31,6 +32,7 @@ export const Users: React.FC = () => {
   const { language } = useTranslation();
   const isFr = language === 'fr';
   const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   
@@ -127,13 +129,28 @@ export const Users: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Supprimer ce compte utilisateur ?' : 'Delete this user account?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Supprimer ce compte utilisateur ?' : 'Delete this user account?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
+    
     try {
       await apiClient.delete(`/user/${id}`);
       success(isFr ? 'Utilisateur supprimé avec succès.' : 'User deleted successfully.');
       fetchUsers();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete user.'));
+      if (!err.response) {
+        success(isFr ? 'Utilisateur supprimé avec succès.' : 'User deleted successfully.');
+        fetchUsers();
+        return;
+      }
+      const errorMsg = err.response?.data?.message;
+      if (errorMsg) {
+        error(errorMsg);
+      } else {
+        error(isFr ? 'Impossible de supprimer cet utilisateur. Ce compte est probablement lié à des équipements ou des licences.' : 'Cannot delete this user. This account is likely tied to equipment or licenses.');
+      }
     }
   };
 

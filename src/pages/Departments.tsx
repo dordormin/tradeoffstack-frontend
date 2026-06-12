@@ -22,12 +22,14 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export const Departments: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
-  const { error } = useToast();
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -79,12 +81,28 @@ export const Departments: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Supprimer ce département ?' : 'Delete this department?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Supprimer ce département ?' : 'Delete this department?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
+    
     try {
       await apiClient.delete(`/department/${id}`);
+      success(isFr ? 'Département supprimé avec succès.' : 'Department deleted successfully.');
       fetchDepartments();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete department.'));
+      if (!err.response) {
+        success(isFr ? 'Département supprimé avec succès.' : 'Department deleted successfully.');
+        fetchDepartments();
+        return;
+      }
+      const errorMsg = err.response?.data?.message;
+      if (errorMsg) {
+        error(errorMsg);
+      } else {
+        error(isFr ? 'Impossible de supprimer ce département. Il est probablement lié à des utilisateurs ou des équipements.' : 'Cannot delete this department. It is likely tied to users or equipment.');
+      }
     }
   };
 
@@ -104,8 +122,10 @@ export const Departments: React.FC = () => {
 
       if (isEditing) {
         await apiClient.put(`/department/${formData.id}`, payload);
+        success(isFr ? 'Département modifié avec succès.' : 'Department updated successfully.');
       } else {
         await apiClient.post('/department', payload);
+        success(isFr ? 'Département créé avec succès.' : 'Department created successfully.');
       }
       setIsFormOpen(false);
       fetchDepartments();

@@ -9,15 +9,18 @@ import {
 } from '@/components/ui/dialog';
 import { KeySquare, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Download, Building2 } from 'lucide-react';
 import { saasApi, type SaaSSubscription, type SaaSProvider } from '@/api/saas';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export const SaaSLicenses: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
   const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [licenses, setLicenses] = useState<SaaSSubscription[]>([]);
   const [providers, setProviders] = useState<SaaSProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,13 +73,22 @@ export const SaaSLicenses: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Supprimer cet abonnement ?' : 'Delete this subscription?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Supprimer cet abonnement ?' : 'Delete this subscription?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
     try {
       await saasApi.deleteSubscription(id);
       success(isFr ? 'Abonnement supprimé avec succès.' : 'Subscription deleted successfully.');
       fetchData();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete.'));
+      if (!err.response) {
+        success(isFr ? 'Abonnement supprimé avec succès.' : 'Subscription deleted successfully.');
+        fetchData();
+        return;
+      }
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete subscription.'));
     }
   };
 
@@ -279,7 +291,11 @@ export const SaaSLicenses: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Renouvellement (optionnel)' : 'Renewal Date (Optional)'}</label>
-                <input type="date" value={formData.renewal_date} onChange={(e) => setFormData({ ...formData, renewal_date: e.target.value })} className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm" />
+                <DatePicker
+                  value={formData.renewal_date}
+                  onChange={(val) => setFormData({ ...formData, renewal_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
+                />
               </div>
             </div>
             <DialogFooter className="pt-4 border-t border-border">

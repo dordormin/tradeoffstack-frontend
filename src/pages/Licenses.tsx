@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { 
   Dialog, 
   DialogContent, 
@@ -22,13 +23,15 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import type { SoftwareLicense } from '@/types';
 
 export const Licenses: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
-  const { error } = useToast();
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [licenses, setLicenses] = useState<SoftwareLicense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,6 +44,7 @@ export const Licenses: React.FC = () => {
     license_key: '',
     total_seats: 1,
     expiration_date: '',
+    purchase_date: '',
     price: 0
   });
 
@@ -68,6 +72,7 @@ export const Licenses: React.FC = () => {
       license_key: '',
       total_seats: 1,
       expiration_date: '',
+      purchase_date: '',
       price: 0
     });
     setErrorMessage('');
@@ -82,6 +87,7 @@ export const Licenses: React.FC = () => {
       license_key: license.license_key,
       total_seats: license.total_seats,
       expiration_date: license.expiration_date ? license.expiration_date.split('T')[0] : '',
+      purchase_date: license.purchase_date ? license.purchase_date.split('T')[0] : '',
       price: license.price
     });
     setErrorMessage('');
@@ -89,12 +95,27 @@ export const Licenses: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Supprimer cette licence logicielle ?' : 'Delete this software license?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Supprimer cette licence logicielle ?' : 'Delete this software license?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
     try {
       await apiClient.delete(`/softwarelicense/${id}`);
+      success(isFr ? 'Licence logicielle supprimée avec succès.' : 'Software license deleted successfully.');
       fetchLicenses();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete license.'));
+      if (!err.response) {
+        success(isFr ? 'Licence logicielle supprimée avec succès.' : 'Software license deleted successfully.');
+        fetchLicenses();
+        return;
+      }
+      const errorMsg = err.response?.data?.message;
+      if (errorMsg) {
+        error(errorMsg);
+      } else {
+        error(isFr ? 'Impossible de supprimer cette licence. Elle est probablement liée à des équipements.' : 'Cannot delete this license. It is likely tied to equipment.');
+      }
     }
   };
 
@@ -110,13 +131,16 @@ export const Licenses: React.FC = () => {
       const payload = {
         ...formData,
         id: isEditing ? formData.id : crypto.randomUUID(),
-        expiration_date: formData.expiration_date ? new Date(formData.expiration_date).toISOString() : null
+        expiration_date: formData.expiration_date ? new Date(formData.expiration_date).toISOString() : null,
+        purchase_date: formData.purchase_date ? new Date(formData.purchase_date).toISOString() : null
       };
 
       if (isEditing) {
         await apiClient.put(`/softwarelicense/${formData.id}`, payload);
+        success(isFr ? 'Licence modifiée avec succès.' : 'License updated successfully.');
       } else {
         await apiClient.post('/softwarelicense', payload);
+        success(isFr ? 'Licence créée avec succès.' : 'License created successfully.');
       }
       setIsFormOpen(false);
       fetchLicenses();
@@ -341,16 +365,23 @@ export const Licenses: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {isFr ? 'Date d\'expiration (optionnel)' : 'Expiration Date (Optional)'}
-              </label>
-              <input 
-                type="date" 
-                value={formData.expiration_date}
-                onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? "Date d'achat" : 'Purchase Date'}</label>
+                <DatePicker
+                  value={formData.purchase_date}
+                  onChange={(val) => setFormData({ ...formData, purchase_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Expiration (Optionnel)' : 'Expiration (Optional)'}</label>
+                <DatePicker
+                  value={formData.expiration_date}
+                  onChange={(val) => setFormData({ ...formData, expiration_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
+                />
+              </div>
             </div>
 
             <DialogFooter className="pt-4 border-t border-border">

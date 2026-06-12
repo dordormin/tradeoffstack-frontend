@@ -19,11 +19,11 @@ test.describe('Login Flow', () => {
     const submitButton = page.locator('button[type="submit"]');
     await submitButton.click();
 
-    // Wait for navigation to dashboard
-    await expect(page).toHaveURL(/\/dashboard/);
+    // Wait for navigation to dashboard (use larger timeout in case backend is waking up)
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
 
     // Verify dashboard is loaded by checking for a dashboard element
-    await expect(page.locator('h1').filter({ hasText: /Application Central|Enterprise Hub|Dashboard|Tableau de bord/ })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /Application Central|Enterprise Hub|Dashboard|Tableau de bord/ })).toBeVisible({ timeout: 15000 });
   });
 
   test('should show error with invalid credentials', async ({ page }) => {

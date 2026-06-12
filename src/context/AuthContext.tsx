@@ -41,6 +41,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const logout = () => {
+    console.log('logout called');
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_id');
+    setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false, user: null });
+  };
+
   useEffect(() => {
     // Check local storage on mount
     const initAuth = async () => {
@@ -103,13 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('login: set isAuthenticated to true');
   };
 
-  const logout = () => {
-    console.log('logout called');
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('user_id');
-    setAuthState({ isAuthenticated: false, role: null, token: null, userId: null, isLoading: false, user: null });
-  };
+
 
   const refreshUser = async () => {
     if (authState.userId && authState.token) {

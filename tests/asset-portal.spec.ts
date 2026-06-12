@@ -10,7 +10,7 @@ test.describe('Asset Portal End-to-End Suite', () => {
     await page.click('button[type="submit"]');
     
     // Wait for redirect to central hub
-    await expect(page.locator('text=Central Hub').or(page.locator('text=Accueil central'))).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Application Central').or(page.locator('text=Enterprise Hub'))).toBeVisible({ timeout: 15000 });
   });
 
   test('Seed and Validate Software Licenses', async ({ page }) => {

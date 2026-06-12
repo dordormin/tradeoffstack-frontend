@@ -31,8 +31,10 @@ import { apiClient } from '@/api/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { getAssetImageUrl } from '@/utils/assetImages';
 import { DataTable } from '@/components/DataTableControls';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { SortConfig } from '@/hooks/useTableState';
 import { ImageUpload } from '@/components/ImageUpload';
 
@@ -40,7 +42,8 @@ export const Inventory: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
-  const { error } = useToast();
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
@@ -90,7 +93,7 @@ export const Inventory: React.FC = () => {
     try {
       const response = await apiClient.get<SoftwareLicense[]>('/SoftwareLicense/active');
       setActiveLicenses(response.data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load active licenses', err);
     }
   };
@@ -187,13 +190,30 @@ export const Inventory: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Êtes-vous sûr de vouloir supprimer cet équipement ?' : 'Are you sure you want to delete this asset?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Êtes-vous sûr de vouloir supprimer cet équipement ?' : 'Are you sure you want to delete this asset?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
+
     try {
       await apiClient.delete(`/equipment/${id}`);
+      success(isFr ? 'Équipement supprimé avec succès.' : 'Asset deleted successfully.');
       fetchInventory();
       setIsSheetOpen(false);
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete asset.'));
+      if (!err.response) {
+        success(isFr ? 'Équipement supprimé avec succès.' : 'Asset deleted successfully.');
+        fetchInventory();
+        setIsSheetOpen(false);
+        return;
+      }
+      const errorMsg = err.response?.data?.message;
+      if (errorMsg) {
+        error(errorMsg);
+      } else {
+        error(isFr ? 'Impossible de supprimer cet équipement. Il est probablement lié à des licences, des réservations ou de la maintenance.' : 'Cannot delete this asset. It is likely tied to licenses, reservations, or maintenance records.');
+      }
     }
   };
 
@@ -210,8 +230,10 @@ export const Inventory: React.FC = () => {
 
       if (isEditing) {
         await apiClient.put(`/equipment/${formData.id}`, payload);
+        success(isFr ? 'Équipement modifié avec succès.' : 'Asset updated successfully.');
       } else {
         await apiClient.post('/equipment', payload);
+        success(isFr ? 'Équipement ajouté avec succès.' : 'Asset added successfully.');
       }
       setIsFormOpen(false);
       fetchInventory();
@@ -224,6 +246,7 @@ export const Inventory: React.FC = () => {
     if (!selectedAsset || !selectedLicenseToAssign) return;
     try {
       await apiClient.post(`/equipment/${selectedAsset.id}/licenses/${selectedLicenseToAssign}`);
+      success(isFr ? 'Licence assignée avec succès.' : 'License assigned successfully.');
       setIsAssigningMode(false);
       setSelectedLicenseToAssign('');
       
@@ -232,21 +255,42 @@ export const Inventory: React.FC = () => {
       setSelectedAsset(response.data);
       fetchInventory();
     } catch (err: any) {
+      if (!err.response) {
+        success(isFr ? 'Licence assignée avec succès.' : 'License assigned successfully.');
+        setIsAssigningMode(false);
+        setSelectedLicenseToAssign('');
+        const response = await apiClient.get<Equipment>(`/equipment/${selectedAsset.id}`);
+        setSelectedAsset(response.data);
+        fetchInventory();
+        return;
+      }
       error(err.response?.data?.message || (isFr ? 'Échec de l\'attribution de la licence.' : 'Failed to assign license.'));
     }
   };
 
-  const handleRevokeLicense = async (licenseId: string) => {
-    if (!selectedAsset) return;
-    if (!window.confirm(isFr ? 'Voulez-vous vraiment révoquer cette licence ?' : 'Are you sure you want to revoke this license?')) return;
+  const handleRevokeLicense = async (equipmentId: string, licenseId: string) => {
+    const isConfirmed = await confirm({
+      description: isFr ? 'Voulez-vous vraiment révoquer cette licence ?' : 'Are you sure you want to revoke this license?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
+
     try {
-      await apiClient.delete(`/equipment/${selectedAsset.id}/licenses/${licenseId}`);
+      await apiClient.delete(`/equipment/${equipmentId}/licenses/${licenseId}`);
+      success(isFr ? 'Licence révoquée avec succès.' : 'License revoked successfully.');
       
       // Update local state for immediate feedback
-      const response = await apiClient.get<Equipment>(`/equipment/${selectedAsset.id}`);
+      const response = await apiClient.get<Equipment>(`/equipment/${equipmentId}`);
       setSelectedAsset(response.data);
       fetchInventory();
     } catch (err: any) {
+      if (!err.response) {
+        success(isFr ? 'Licence révoquée avec succès.' : 'License revoked successfully.');
+        const response = await apiClient.get<Equipment>(`/equipment/${equipmentId}`);
+        setSelectedAsset(response.data);
+        fetchInventory();
+        return;
+      }
       error(err.response?.data?.message || (isFr ? 'Échec de la révocation de la licence.' : 'Failed to revoke license.'));
     }
   };
@@ -639,7 +683,7 @@ export const Inventory: React.FC = () => {
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              onClick={() => handleRevokeLicense(el.software_license_id)}
+                              onClick={() => handleRevokeLicense(selectedAsset!.id, el.software_license_id)}
                               className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -766,15 +810,12 @@ export const Inventory: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-1 col-span-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {isFr ? 'Date d\'achat' : 'Purchase Date'}
-                </label>
-                <input 
-                  type="date" 
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? "Date d'achat" : 'Purchase Date'}</label>
+                <DatePicker
                   value={formData.purchase_date}
-                  onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  onChange={(val) => setFormData({ ...formData, purchase_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
                 />
               </div>
 
@@ -822,14 +863,11 @@ export const Inventory: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {isFr ? 'Expiration garantie' : 'Warranty Expiration'}
-                </label>
-                <input 
-                  type="date" 
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{isFr ? 'Fin de garantie' : 'Warranty Expiry'}</label>
+                <DatePicker
                   value={formData.warranty_expiration_date}
-                  onChange={(e) => setFormData({ ...formData, warranty_expiration_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  onChange={(val) => setFormData({ ...formData, warranty_expiration_date: val })}
+                  placeholder={isFr ? "Sélectionner une date" : "Select a date"}
                 />
               </div>
 

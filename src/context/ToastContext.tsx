@@ -26,7 +26,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
+    }, 10000);
   }, []);
 
   const success = useCallback((msg: string) => addToast(msg, 'success'), [addToast]);
@@ -40,7 +40,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 min-w-[300px] px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md text-sm font-medium transition-all animate-in slide-in-from-right-5 fade-in duration-300 ${
+            className={`group pointer-events-auto relative overflow-hidden flex items-center justify-between gap-3 min-w-[300px] px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md text-sm font-medium transition-all animate-in slide-in-from-right-5 fade-in duration-300 ${
               t.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
               t.type === 'error' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
               'bg-sky-500/10 text-sky-500 border-sky-500/20'
@@ -58,6 +58,8 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             >
               <X className="w-4 h-4" />
             </button>
+            {/* Animated progress bar */}
+            <div className="absolute bottom-0 left-0 h-1 bg-current opacity-30 animate-shrink-width" style={{ animationDuration: '10000ms', animationTimingFunction: 'linear', animationFillMode: 'forwards' }} />
           </div>
         ))}
       </div>

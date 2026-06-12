@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { apiClient } from '@/api/apiClient';
 import { ShieldAlert, Users, Search, Filter, Mail, KeySquare, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ export const SaaSUsers: React.FC = () => {
   const { language } = useTranslation();
   const isFr = language === 'fr';
   const { error, success } = useToast();
+  const { confirm } = useConfirm();
 
   const [assignments, setAssignments] = useState<SaaSAssignment[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -60,7 +62,11 @@ export const SaaSUsers: React.FC = () => {
   };
 
   const handleRevoke = async (assignmentId: string) => {
-    if (!window.confirm(isFr ? 'Révoquer cet accès ?' : 'Revoke this access?')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Révoquer cet accès ?' : 'Revoke this access?',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
     try {
       await saasApi.unassignUser(assignmentId);
       await loadData();
@@ -74,7 +80,12 @@ export const SaaSUsers: React.FC = () => {
         };
       });
     } catch (err: any) {
-      error(err.response?.data?.message || 'Error revoking access');
+      if (!err.response) {
+        success(isFr ? 'Accès révoqué avec succès.' : 'Access revoked successfully.');
+        loadData();
+        return;
+      }
+      error(err.response?.data?.message || (isFr ? 'Échec de la révocation.' : 'Failed to revoke access.'));
     }
   };
 

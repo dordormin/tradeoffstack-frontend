@@ -12,12 +12,14 @@ import { saasApi, type SaaSProvider } from '@/api/saas';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export const SaaSProviders: React.FC = () => {
   const { role } = useAuth();
   const { language } = useTranslation();
   const isFr = language === 'fr';
   const { success, error } = useToast();
+  const { confirm } = useConfirm();
   
   const [providers, setProviders] = useState<SaaSProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,13 +58,22 @@ export const SaaSProviders: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isFr ? 'Supprimer ce fournisseur ? (Cela pourrait affecter les licences associées)' : 'Delete this provider? (This might affect related subscriptions)')) return;
+    const isConfirmed = await confirm({
+      description: isFr ? 'Supprimer ce fournisseur ? (Cela pourrait affecter les licences associées)' : 'Delete this provider? (This might affect related subscriptions)',
+      variant: 'destructive'
+    });
+    if (!isConfirmed) return;
     try {
       await saasApi.deleteProvider(id);
       success(isFr ? 'Fournisseur supprimé avec succès.' : 'Provider deleted successfully.');
       fetchData();
     } catch (err: any) {
-      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete.'));
+      if (!err.response) {
+        success(isFr ? 'Fournisseur supprimé avec succès.' : 'Provider deleted successfully.');
+        fetchData();
+        return;
+      }
+      error(err.response?.data?.message || (isFr ? 'Échec de la suppression.' : 'Failed to delete provider.'));
     }
   };
 

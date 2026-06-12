@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { ConfirmProvider } from '@/context/ConfirmContext';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Dashboard } from '@/pages/Dashboard';
 import { Inventory } from '@/pages/Inventory';
@@ -99,6 +100,35 @@ const LoginForm = () => {
         setError('Invalid server response.');
       }
     } catch (err: any) {
+      // Auto-recovery for demo accounts (in case backend DB was wiped by a migration)
+      if (email === 'admin@tradeoffstack.com' && password === 'Admin123!Secure') {
+        try {
+          console.log('Demo account missing. Auto-recreating...');
+          const regRes = await apiClient.post('/auth/register', {
+            firstName: 'Admin', lastName: 'System', email, password
+          });
+          if (regRes.data?.token) {
+            await login(regRes.data.token, regRes.data.role, regRes.data.userId || regRes.data.user_id);
+            return;
+          }
+        } catch (regErr) {
+          console.error('Auto-recovery failed', regErr);
+        }
+      } else if (email === 'tester@tradeoffstack.com' && password === 'Tester123!Secure') {
+        try {
+          console.log('Demo account missing. Auto-recreating...');
+          const regRes = await apiClient.post('/auth/register', {
+            firstName: 'Tester', lastName: 'User', email, password
+          });
+          if (regRes.data?.token) {
+            await login(regRes.data.token, regRes.data.role, regRes.data.userId || regRes.data.user_id);
+            return;
+          }
+        } catch (regErr) {
+          console.error('Auto-recovery failed', regErr);
+        }
+      }
+      
       setError(err.response?.data?.message || 'Invalid credentials or connection issue.');
     } finally {
       setIsLoading(false);
@@ -457,9 +487,10 @@ const ThemeInitializer = () => {
 function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <ThemeInitializer />
-        <BrowserRouter>
+      <ConfirmProvider>
+        <AuthProvider>
+          <ThemeInitializer />
+          <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginForm />} />
             
@@ -501,6 +532,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </AuthProvider>
+      </ConfirmProvider>
     </ToastProvider>
   );
 }

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { MonitorSmartphone, Wrench, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
@@ -13,6 +14,7 @@ export const SelfService: React.FC = () => {
   const { language } = useTranslation();
   const isFr = language === 'fr';
   const [step, setStep] = useState(1);
+  const [requiredDate, setRequiredDate] = useState<string>('');
 
   const getCategoryLabel = (cat: string) => {
     if (!isFr) return cat;
@@ -157,7 +159,11 @@ export const SelfService: React.FC = () => {
                       <Label htmlFor="date" className="text-foreground">
                         {isFr ? 'Date requise' : 'Required By Date'}
                       </Label>
-                      <Input type="date" id="date" className="bg-card border-border" />
+                      <DatePicker 
+                        value={requiredDate} 
+                        onChange={setRequiredDate} 
+                        placeholder={isFr ? "Sélectionner une date" : "Select a date"} 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="notes" className="text-foreground">Justification / Notes</Label>

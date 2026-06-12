@@ -55,6 +55,7 @@ export interface SoftwareLicense {
   license_key: string;
   total_seats: number;
   expiration_date?: string;
+  purchase_date?: string;
   price: number;
   created_at: string;
 }
