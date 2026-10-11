@@ -1,5 +1,14 @@
 import axios from 'axios';
 
+// SECURITY (F-05): the JWT is no longer kept in localStorage (XSS risk).
+// Browsers authenticate via the HttpOnly 'tos_auth' cookie issued by the API
+// at login. `memoryToken` is an in-memory fallback for non-cookie contexts
+// (e.g. plain-HTTP local dev, where Secure cookies are refused by browsers).
+let memoryToken: string | null = null;
+export const setMemoryToken = (token: string | null): void => {
+  memoryToken = token;
+};
+
 // Helper to dynamically resolve API base URL depending on deployment context
 const getBaseURL = (): string => {
   if (typeof window !== 'undefined') {
@@ -20,14 +29,14 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // send the HttpOnly auth cookie on every request
 });
 
-// Request Interceptor: Attach JWT token if available
+// Request Interceptor: Attach in-memory JWT as fallback when present
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('jwt_token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (memoryToken && config.headers) {
+      config.headers.Authorization = `Bearer ${memoryToken}`;
     }
     return config;
   },
@@ -41,9 +50,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login if unauthorized
-      localStorage.removeItem('jwt_token');
+      // Clear in-memory token and non-secret markers, then notify the app
+      setMemoryToken(null);
       localStorage.removeItem('user_role');
+      localStorage.removeItem('user_id');
       window.dispatchEvent(new Event('auth:unauthorized'));
     }
     return Promise.reject(error);
