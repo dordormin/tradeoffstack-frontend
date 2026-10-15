@@ -1,0 +1,29 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ "dev", "preprod", "prod" ]
+  pull_request:
+    branches: [ "dev", "preprod", "prod" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+# Note: `npm run lint` n'est pas inclus (76 erreurs / 7 warnings sur main au 15/10/2026).
+# Réparer le lint avant de l'ajouter comme check requis.
